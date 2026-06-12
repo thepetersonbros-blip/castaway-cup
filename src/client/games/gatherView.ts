@@ -2,7 +2,10 @@ import { GATHER, TRIBE_COLORS } from '../../shared/constants';
 import type { FoodKind, GatherPub } from '../../shared/protocol';
 import { game, nameOf, colorIdxOf } from '../state';
 import { sendPlay } from '../net';
-import { castaway, chip, colorOf, txt, type GameView } from './common';
+import { burst } from '../fx';
+import { castaway, chip, colorOf, glow, shadowEllipse, txt, type GameView } from './common';
+
+const dizzySeen = new Map<number, boolean>();
 
 function arenaRect(w: number, h: number): { x: number; y: number; aw: number; ah: number } {
   const top = h * 0.13;
@@ -131,10 +134,12 @@ export const gatherView: GameView = {
       ctx.fillRect(x + ((i * 97) % aw), y + ((i * 53) % ah), 3, 2);
     }
 
-    // home mats
+    // home mats with a soft beacon glow
     for (const p of state.players) {
       const mx = px2(p.hx);
       const my = py2(p.hy);
+      const mine = p.slot === game.you.slot;
+      glow(ctx, mx, my, GATHER.bankRadius * sx * 2, colorOf(colorIdxOf(p.slot)), mine ? 0.32 : 0.16);
       ctx.fillStyle = colorOf(colorIdxOf(p.slot)) + '55';
       ctx.strokeStyle = colorOf(colorIdxOf(p.slot));
       ctx.lineWidth = 2.5;
@@ -145,8 +150,9 @@ export const gatherView: GameView = {
       txt(ctx, '🧺', mx, my, 16);
     }
 
-    // food on the ground
+    // food on the ground, each with a contact shadow
     for (const it of state.items) {
+      shadowEllipse(ctx, px2(it.x), py2(it.y) + 7, 9, 3, 0.18);
       drawFood(ctx, it.kind, px2(it.x), py2(it.y), 16);
     }
 
@@ -156,6 +162,18 @@ export const gatherView: GameView = {
       const cx = px2(p.x);
       const cy = py2(p.y);
       const mine = p.slot === game.you.slot;
+      if (p.dizzy && !dizzySeen.get(p.slot)) {
+        burst(cx, cy - 24, {
+          n: 18,
+          colors: ['#d8324a', '#6e4a26', '#f0c030', '#ffffff'],
+          speed: 3.4,
+          size: 3.2,
+          life: 40,
+          grav: 0.16,
+          up: true
+        });
+      }
+      dizzySeen.set(p.slot, p.dizzy);
       ctx.fillStyle = '#00000022';
       ctx.beginPath();
       ctx.ellipse(cx, cy + 2, 12, 4, 0, 0, Math.PI * 2);

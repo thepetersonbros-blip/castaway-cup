@@ -1,9 +1,25 @@
 import type { IdolPub } from '../../shared/protocol';
 import { game, nameOf, colorIdxOf } from '../state';
-import { chip, txt, type GameView } from './common';
+import { burst } from '../fx';
+import { chip, glow, txt, type GameView } from './common';
 import { sfx } from '../audio';
 
 let lastMode = '';
+
+function godRays(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, now: number): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(now / 4000);
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * Math.PI * 2;
+    ctx.fillStyle = 'rgba(255,222,120,0.10)';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, r, a, a + 0.24);
+    ctx.fill();
+  }
+  ctx.restore();
+}
 
 function drawIdol(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, glow: number): void {
   if (glow > 0) {
@@ -33,14 +49,23 @@ function drawIdol(ctx: CanvasRenderingContext2D, x: number, y: number, s: number
 
 export const idolView: GameView = {
   render(ctx, w, h, state: IdolPub, now) {
+    const cx = w / 2;
+    const cy = h * 0.42;
     if (state.mode !== lastMode) {
-      if (state.mode === 'go') sfx.gong();
+      if (state.mode === 'go') {
+        sfx.gong();
+        burst(cx, cy, {
+          n: 36,
+          colors: ['#ffd84a', '#fff3b0', '#ffaa30'],
+          speed: 5,
+          size: 3.4,
+          life: 44,
+          grav: 0.05
+        });
+      }
       lastMode = state.mode;
     }
     txt(ctx, `DRAW ${state.draw} OF ${state.draws}`, w / 2, h * 0.08, 20, '#ffd98a');
-
-    const cx = w / 2;
-    const cy = h * 0.42;
     if (state.mode === 'wait') {
       // dark jungle tension
       ctx.fillStyle = '#00000066';
@@ -49,6 +74,8 @@ export const idolView: GameView = {
       txt(ctx, 'wait for it', cx, cy, 26 + pulse * 4, `rgba(244,236,216,${0.35 + pulse * 0.4})`);
       txt(ctx, 'tap too soon and you lose a point...', cx, cy + 40, 14, '#9fb3bf');
     } else if (state.mode === 'go') {
+      godRays(ctx, cx, cy, Math.min(w, h) * 0.5, now);
+      glow(ctx, cx, cy, 180, '#ffd84a', 0.5);
       drawIdol(ctx, cx, cy, 70, 1);
       txt(ctx, 'GRAB IT!!', cx, cy + 110, 34, '#fff3b0');
     } else {

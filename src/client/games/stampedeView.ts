@@ -2,7 +2,12 @@ import { STAMPEDE } from '../../shared/constants';
 import type { StampedePub } from '../../shared/protocol';
 import { game, nameOf, colorIdxOf } from '../state';
 import { sendPlay } from '../net';
-import { castaway, chip, colorOf, txt, type GameView } from './common';
+import { burst } from '../fx';
+import { castaway, chip, colorOf, glow, shadowEllipse, txt, type GameView } from './common';
+
+let prevRocks = new Set<number>();
+const aliveSeen = new Map<number, boolean>();
+let lastDust = 0;
 
 // Pastel mosaic tiles, Mario-Party style.
 const TILE_COLORS = ['#bcd9c9', '#e8c9b0', '#c9c2e0', '#dfe0b8', '#bccfdd', '#e0bcc6'];
@@ -154,23 +159,55 @@ export const stampedeView: GameView = {
     txt(ctx, String(Math.ceil(state.left / 20)), w / 2, h * 0.085, 44, '#7ae8e8');
     txt(ctx, `ROUND ${state.round} OF ${state.rounds}`, w / 2, h * 0.135, 14, '#ffd98a');
 
-    // mosaic floor
+    // mosaic floor with beveled, Mario-Party-chunky tiles
     for (let cy = 0; cy < STAMPEDE.gridH; cy++) {
       for (let cx = 0; cx < STAMPEDE.gridW; cx++) {
         const tx = x + cx * s;
         const ty = y + cy * s;
-        ctx.fillStyle = TILE_COLORS[(cx * 7 + cy * 13 + ((cx * cy) % 5)) % TILE_COLORS.length];
+        const base = TILE_COLORS[(cx * 7 + cy * 13 + ((cx * cy) % 5)) % TILE_COLORS.length];
+        const tg = ctx.createLinearGradient(tx, ty, tx, ty + s);
+        tg.addColorStop(0, base);
+        tg.addColorStop(1, base + 'cc');
+        ctx.fillStyle = tg;
         ctx.fillRect(tx, ty, s, s);
-        ctx.strokeStyle = '#00000014';
+        // bevel: lit top edge, shaded bottom edge
+        ctx.fillStyle = '#ffffff38';
+        ctx.fillRect(tx, ty, s, s * 0.1);
+        ctx.fillStyle = '#00000026';
+        ctx.fillRect(tx, ty + s * 0.9, s, s * 0.1);
+        ctx.strokeStyle = '#00000018';
         ctx.lineWidth = 1;
         ctx.strokeRect(tx + 0.5, ty + 0.5, s - 1, s - 1);
-        ctx.strokeStyle = '#ffffff20';
-        ctx.strokeRect(tx + s * 0.18, ty + s * 0.18, s * 0.64, s * 0.64);
+        ctx.strokeStyle = '#ffffff24';
+        ctx.strokeRect(tx + s * 0.2, ty + s * 0.2, s * 0.6, s * 0.6);
       }
     }
-    ctx.strokeStyle = '#7a5c34';
-    ctx.lineWidth = 5;
-    ctx.strokeRect(x, y, STAMPEDE.gridW * s, STAMPEDE.gridH * s);
+    // arena rim with depth
+    ctx.strokeStyle = '#54402a';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(x - 2, y - 2, STAMPEDE.gridW * s + 4, STAMPEDE.gridH * s + 4);
+    ctx.strokeStyle = '#a8865a';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x - 5, y - 5, STAMPEDE.gridW * s + 10, STAMPEDE.gridH * s + 10);
+
+    // rock-smash debris: any boulder that vanished explodes
+    const nowRocks = new Set<number>(state.rocks.map(([rx, ry]) => ry * STAMPEDE.gridW + rx));
+    for (const k of prevRocks) {
+      if (!nowRocks.has(k) && state.mode === 'play') {
+        const rx = k % STAMPEDE.gridW;
+        const ry = Math.floor(k / STAMPEDE.gridW);
+        burst(x + (rx + 0.5) * s, y + (ry + 0.5) * s, {
+          n: 18,
+          colors: ['#8a8f9a', '#6e7480', '#b8bcc4'],
+          speed: 3.6,
+          size: 3.4,
+          life: 36,
+          grav: 0.18,
+          up: true
+        });
+      }
+    }
+    prevRocks = nowRocks;
 
     // rocks
     for (const [rx, ry] of state.rocks) {
@@ -190,6 +227,17 @@ export const stampedeView: GameView = {
     for (const p of state.humans) {
       if (p.alive) continue;
       const e = easeTo(p.slot, x + (p.cx + 0.5) * s, y + (p.cy + 0.5) * s);
+      if (aliveSeen.get(p.slot)) {
+        burst(e.x, e.y, {
+          n: 24,
+          colors: [colorOf(colorIdxOf(p.slot)), '#ffffff', '#ffd98a'],
+          speed: 4.2,
+          size: 3.4,
+          life: 42,
+          grav: 0.1
+        });
+      }
+      aliveSeen.set(p.slot, false);
       ctx.fillStyle = colorOf(colorIdxOf(p.slot)) + 'cc';
       ctx.beginPath();
       ctx.ellipse(e.x, e.y, s * 0.45, s * 0.2, 0, 0, Math.PI * 2);
@@ -199,13 +247,30 @@ export const stampedeView: GameView = {
     // live humans
     for (const p of state.humans) {
       if (!p.alive) continue;
+      aliveSeen.set(p.slot, true);
       const e = easeTo(p.slot, x + (p.cx + 0.5) * s, y + (p.cy + 0.5) * s);
+      shadowEllipse(ctx, e.x, e.y + s * 0.42, s * 0.32, s * 0.1, 0.28);
       castaway(ctx, e.x, e.y + s * 0.4, s * 0.27, colorIdxOf(p.slot), 0, false);
       txt(ctx, nameOf(p.slot), e.x, e.y + s * 0.62, 10.5, '#10202ecc');
     }
-    // elephants on top
+    // elephants on top, kicking up dust when charging
     for (const el of state.elephants) {
       const e = easeTo(el.slot + 100, x + el.cx * s, y + el.cy * s);
+      shadowEllipse(ctx, e.x + s, e.y + s * 1.92, s * 0.95, s * 0.22, 0.3);
+      if (el.charging) {
+        glow(ctx, e.x + s, e.y + s, s * 2.1, '#ff7a5a', 0.18);
+        if (now - lastDust > 70) {
+          lastDust = now;
+          burst(e.x + s, e.y + s * 1.85, {
+            n: 4,
+            colors: ['#d8c8a8', '#b8a888', '#ffffff'],
+            speed: 1.6,
+            size: 4,
+            life: 30,
+            grav: -0.02
+          });
+        }
+      }
       drawElephant(ctx, e.x, e.y, s * 2, colorIdxOf(el.slot), el.charging, now);
       txt(ctx, nameOf(el.slot), e.x + s, e.y - 6, 11.5, '#fff3b0');
     }

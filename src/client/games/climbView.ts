@@ -1,7 +1,10 @@
 import { CLIMB } from '../../shared/constants';
 import type { ClimbPub } from '../../shared/protocol';
 import { game, nameOf, colorIdxOf } from '../state';
-import { castaway, chip, palm, txt, type GameView } from './common';
+import { burst } from '../fx';
+import { castaway, chip, palm, shadowEllipse, txt, type GameView } from './common';
+
+const stingSeen = new Map<number, boolean>();
 
 export const climbView: GameView = {
   render(ctx, w, h, state: ClimbPub, now) {
@@ -36,8 +39,20 @@ export const climbView: GameView = {
       ctx.arc(cx + 7, topY + 6, 5, 0, Math.PI * 2);
       ctx.arc(cx - 2, topY + 9, 5, 0, Math.PI * 2);
       ctx.fill();
-      // climber
+      // climber (+ bark dust on a fresh slip)
       const cy = groundY - (p.h / CLIMB.top) * (groundY - topY - 18);
+      if (p.sting && !stingSeen.get(p.slot)) {
+        burst(cx + 12, cy - 10, {
+          n: 10,
+          colors: ['#a8865a', '#8a6c3a', '#d8c8a0'],
+          speed: 1.8,
+          size: 2.6,
+          life: 28,
+          grav: 0.16
+        });
+      }
+      stingSeen.set(p.slot, p.sting);
+      shadowEllipse(ctx, cx, groundY + 4, 18, 4, 0.28);
       const wig = p.sting ? Math.sin(now / 30) * 4 : 0;
       castaway(ctx, cx + 12 + wig, cy, mine ? 11 : 9, colorIdxOf(p.slot), p.sting ? 0.4 : -0.12, p.fin >= 0);
       if (p.sting) txt(ctx, 'SLIP!', cx, cy - 44, 14, '#ff9a8a');

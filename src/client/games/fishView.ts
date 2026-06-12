@@ -1,7 +1,10 @@
 import { FISH } from '../../shared/constants';
 import type { FishPub } from '../../shared/protocol';
 import { game, nameOf, colorIdxOf } from '../state';
-import { chip, colorOf, txt, type GameView } from './common';
+import { burst } from '../fx';
+import { chip, colorOf, glow, txt, type GameView } from './common';
+
+const seenSplashes = new Set<string>();
 
 function poolRect(w: number, h: number): { x: number; y: number; pw: number; ph: number } {
   const top = h * 0.14;
@@ -36,6 +39,24 @@ export const fishView: GameView = {
     ctx.stroke();
     const sx = pw / FISH.poolW;
     const sy = ph / FISH.poolH;
+    // caustic shimmer bands
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x, y, pw, ph, 18);
+    ctx.clip();
+    for (let i = 0; i < 5; i++) {
+      ctx.strokeStyle = `rgba(255,255,255,${0.07 + (i % 2) * 0.03})`;
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      for (let px = 0; px <= pw; px += 26) {
+        ctx.lineTo(
+          x + px,
+          y + ph * (0.15 + i * 0.18) + Math.sin(now / (520 + i * 90) + px * 0.05 + i * 2) * 7
+        );
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
     // fish
     for (const f of state.fish) {
       const fx = x + f.x * sx;
@@ -62,8 +83,22 @@ export const fishView: GameView = {
       ctx.arc(fx + f.dir * size * 0.45, fy - 1, 1.8, 0, Math.PI * 2);
       ctx.fill();
     }
-    // splashes
+    // splashes: rings + one-time droplet bursts
     for (const s of state.splashes) {
+      const splashKey = `${s.slot}:${s.t}`;
+      if (!seenSplashes.has(splashKey)) {
+        seenSplashes.add(splashKey);
+        if (seenSplashes.size > 60) seenSplashes.clear();
+        burst(x + s.x * sx, y + s.y * sy, {
+          n: s.hit ? 14 : 7,
+          colors: s.hit ? ['#bfeef0', colorOf(colorIdxOf(s.slot)), '#ffffff'] : ['#bfeef0', '#ffffff'],
+          speed: s.hit ? 2.6 : 1.6,
+          size: 2.6,
+          life: 30,
+          grav: 0.12,
+          up: true
+        });
+      }
       const age = 1 - (16 - Math.min(16, game.serverTick - s.t)) / 16;
       const r = 6 + age * 22;
       ctx.strokeStyle = s.hit ? colorOf(colorIdxOf(s.slot)) : '#ffffff88';

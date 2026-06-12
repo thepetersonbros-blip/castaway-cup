@@ -1,6 +1,6 @@
 import type { MemoryPub } from '../../shared/protocol';
 import { game, nameOf, colorIdxOf } from '../state';
-import { chip, txt, type GameView } from './common';
+import { chip, glow, txt, type GameView } from './common';
 import { sfx } from '../audio';
 
 const TILE_COLORS = ['#e8443a', '#2fb24c', '#ffb84d', '#2f7fe8'];
@@ -81,15 +81,27 @@ export const memoryView: GameView = {
     const rects = tileRects(w, h);
     rects.forEach((r, i) => {
       const lit = state.flash === i;
-      ctx.fillStyle = TILE_COLORS[i];
-      ctx.globalAlpha = lit ? 1 : state.mode === 'input' ? 0.85 : 0.45;
+      if (lit) glow(ctx, r.x + r.s / 2, r.y + r.s / 2, r.s * 1.05, TILE_COLORS[i], 0.75);
+      // carved wooden tile: gradient face + bevel edges
+      const tg = ctx.createLinearGradient(r.x, r.y, r.x + r.s, r.y + r.s);
+      tg.addColorStop(0, TILE_COLORS[i]);
+      tg.addColorStop(1, TILE_COLORS[i] + 'aa');
+      ctx.fillStyle = tg;
+      ctx.globalAlpha = lit ? 1 : state.mode === 'input' ? 0.9 : 0.5;
       ctx.beginPath();
       ctx.roundRect(r.x, r.y, r.s, r.s, 16);
       ctx.fill();
       ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#ffffff33';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(r.x + 3, r.y + 3, r.s - 6, r.s - 6, 13);
+      ctx.stroke();
       if (lit) {
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.roundRect(r.x, r.y, r.s, r.s, 16);
         ctx.stroke();
       }
       drawSymbol(ctx, i, r.x + r.s / 2, r.y + r.s / 2 - 6, r.s);

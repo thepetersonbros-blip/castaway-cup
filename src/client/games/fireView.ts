@@ -1,6 +1,7 @@
 import type { FirePub } from '../../shared/protocol';
 import { game, nameOf, colorIdxOf } from '../state';
-import { chip, flame, txt, type GameView } from './common';
+import { burst } from '../fx';
+import { chip, flame, glow, shadowEllipse, txt, type GameView } from './common';
 
 export const fireView: GameView = {
   render(ctx, w, h, state: FirePub, now) {
@@ -13,15 +14,19 @@ export const fireView: GameView = {
     ctx.fillRect(barX - 6, barY - 6, barW + 12, barH + 12);
     ctx.fillStyle = '#2a4660';
     ctx.fillRect(barX, barY, barW, barH);
-    // hot zone
+    // hot zone with a living glow
     const zx = barX + (state.zone / 100) * barW;
     const zw = (state.zoneW / 100) * barW;
+    glow(ctx, zx, barY + barH / 2, zw * 1.1, '#ff9a46', 0.5);
     const zg = ctx.createLinearGradient(zx - zw / 2, 0, zx + zw / 2, 0);
     zg.addColorStop(0, '#ff784600');
-    zg.addColorStop(0.5, '#ffb84d');
+    zg.addColorStop(0.5, '#ffd84d');
     zg.addColorStop(1, '#ff784600');
     ctx.fillStyle = zg;
     ctx.fillRect(zx - zw / 2, barY, zw, barH);
+    // glass shine on the bar
+    ctx.fillStyle = '#ffffff14';
+    ctx.fillRect(barX, barY, barW, barH * 0.4);
     // my cursor big, others tiny
     for (const p of state.players) {
       const cx = barX + (p.cursor / 100) * barW;
@@ -51,8 +56,24 @@ export const fireView: GameView = {
       const cy = gridTop + Math.floor(i / cols) * cellH + cellH * 0.72;
       const mine = p.slot === game.you.slot;
       if (mine) {
-        ctx.fillStyle = '#ffb84d18';
-        ctx.fillRect(cx - cellW / 2 + 6, cy - cellH * 0.66, cellW - 12, cellH * 0.92);
+        glow(ctx, cx, cy + 4, cellW * 0.42, '#ffd98a', 0.22);
+        txt(ctx, '▼ you', cx, cy - cellH * 0.62, 12, '#ffd98a');
+      }
+      // firelight on the ground + drifting embers
+      shadowEllipse(ctx, cx, cy + 14, 36, 8);
+      if (p.meter > 3) {
+        glow(ctx, cx, cy, 30 + (p.meter / 100) * 70, '#ff8c46', 0.1 + (p.meter / 100) * 0.25);
+        if (Math.random() < 0.06 + (p.meter / 100) * 0.2) {
+          burst(cx + (Math.random() - 0.5) * 16, cy - 10, {
+            n: 1,
+            colors: ['#ffd98a', '#ff9a4d', '#ffefb0'],
+            speed: 0.7,
+            size: 2.4,
+            life: 55,
+            grav: -0.035,
+            up: true
+          });
+        }
       }
       // logs + stones
       ctx.strokeStyle = '#6e4a26';

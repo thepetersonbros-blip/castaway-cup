@@ -1,6 +1,9 @@
 import type { BalancePub } from '../../shared/protocol';
 import { game, nameOf, colorIdxOf } from '../state';
-import { castaway, chip, txt, type GameView } from './common';
+import { burst } from '../fx';
+import { castaway, chip, shadowEllipse, txt, type GameView } from './common';
+
+const fallenSeen = new Set<number>();
 
 export const balanceView: GameView = {
   render(ctx, w, h, state: BalancePub, now) {
@@ -31,6 +34,18 @@ export const balanceView: GameView = {
       ctx.lineTo(cx, poleTop);
       ctx.stroke();
       if (p.fallen >= 0) {
+        if (!fallenSeen.has(p.slot)) {
+          fallenSeen.add(p.slot);
+          burst(cx, seaY + 8, {
+            n: 22,
+            colors: ['#bfeef0', '#ffffff', '#7ad0c8'],
+            speed: 3.2,
+            size: 3,
+            life: 38,
+            grav: 0.14,
+            up: true
+          });
+        }
         // bobbing in the drink
         const bob = Math.sin(now / 350 + i) * 4;
         ctx.fillStyle = '#e8b88a';
@@ -43,7 +58,9 @@ export const balanceView: GameView = {
         ctx.fill();
         txt(ctx, '💦', cx, seaY - 14, 18);
       } else {
+        if (fallenSeen.size > 0 && state.players.every((q) => q.fallen < 0)) fallenSeen.clear();
         const lean = (p.angle / 45) * 0.9;
+        shadowEllipse(ctx, cx, seaY + 4, 16, 4, 0.3);
         castaway(ctx, cx, poleTop, mine ? 13 : 10, colorIdxOf(p.slot), lean, Math.abs(p.angle) > 25);
         // danger arc
         if (mine) {

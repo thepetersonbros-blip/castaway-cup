@@ -73,15 +73,33 @@ export const typeView: GameView = {
 
     txt(ctx, `BOTTLE ${state.round} OF ${state.rounds}`, w / 2, h * 0.08, 20, '#ffd98a');
 
-    // the bottle + the word
+    // bobbing bottles + the word on a driftwood plank
     const cy = h * 0.3;
-    txt(ctx, '🍾', w / 2 - Math.min(w * 0.34, 280), cy, 34);
-    txt(ctx, '🍾', w / 2 + Math.min(w * 0.34, 280), cy, 34);
+    const bob = Math.sin(now / 480) * 6;
+    txt(ctx, '🍾', w / 2 - Math.min(w * 0.34, 280), cy + bob, 34);
+    txt(ctx, '🍾', w / 2 + Math.min(w * 0.34, 280), cy - bob, 34);
     if (state.mode === 'go') {
+      const plankW = Math.min(w * 0.7, 60 + state.word.length * 30);
+      const pg = ctx.createLinearGradient(0, cy - 42, 0, cy + 42);
+      pg.addColorStop(0, '#8a6c4a');
+      pg.addColorStop(0.5, '#6e5438');
+      pg.addColorStop(1, '#54402a');
+      ctx.fillStyle = pg;
+      ctx.beginPath();
+      ctx.roundRect(w / 2 - plankW / 2, cy - 40, plankW, 80, 14);
+      ctx.fill();
+      ctx.strokeStyle = '#3a2c1a';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.strokeStyle = '#ffffff22';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(w / 2 - plankW / 2 + 5, cy - 35, plankW - 10, 70, 10);
+      ctx.stroke();
       ctx.save();
       ctx.shadowColor = '#000';
-      ctx.shadowBlur = 14;
-      txt(ctx, state.word.toUpperCase(), w / 2, cy, Math.min(54, w / (state.word.length * 0.72)), '#fff3b0');
+      ctx.shadowBlur = 10;
+      txt(ctx, state.word.toUpperCase(), w / 2, cy, Math.min(50, (plankW - 30) / (state.word.length * 0.62)), '#ffe9b8');
       ctx.restore();
       if (me?.done) {
         txt(ctx, `sent! ${me.ms !== null ? (me.ms / 1000).toFixed(1) + 's' : ''} 🎉`, w / 2, cy + 50, 18, '#9fe8a8');

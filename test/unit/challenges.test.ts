@@ -451,6 +451,27 @@ describe('stampede', () => {
     expect(hu.cx).toBe(11); // moved on the very next tick
   });
 
+  it('a charging elephant smashes through rocks; a walking one is blocked', () => {
+    const ctx = mkCtx([0, 1, 2]);
+    stampede.init(ctx);
+    const st = ctx.priv as any;
+    const eSlot = st.pairs[0][0] as number;
+    const e = st.elephants.get(eSlot);
+    st.rocks = new Set([6 * STAMPEDE.gridW + 8]); // one rock at (8,6)
+    e.cx = 5;
+    e.cy = 5; // stepping right puts the rock inside the 2x2 at (7..8, 5..6)
+    stampede.input(ctx, eSlot, { g: 'stampede', dx: 1, dy: 0 });
+    step(ctx, stampede, 40);
+    expect(e.cx).toBe(7 - 1); // parked against the rock, not through it
+    st.rocks = new Set([6 * STAMPEDE.gridW + 8]);
+    e.cx = 5;
+    e.cy = 5;
+    stampede.input(ctx, eSlot, { g: 'stampede', charge: true });
+    step(ctx, stampede, 10);
+    expect(st.rocks.size).toBe(0); // boulder = gravel
+    expect(e.cx).toBeGreaterThanOrEqual(7);
+  });
+
   it('flattening everyone ends the round early', () => {
     const ctx = mkCtx([0, 1, 2]);
     stampede.init(ctx);

@@ -11,6 +11,7 @@ import { idolView } from './games/idolView';
 import { gatherView } from './games/gatherView';
 import { hideTypeInput, typeView } from './games/typeView';
 import { stampedeView } from './games/stampedeView';
+import { drawFx } from './fx';
 import { sfx } from './audio';
 
 const VIEWS: Record<ChallengePub['g'], GameView> = {
@@ -28,6 +29,26 @@ const VIEWS: Record<ChallengePub['g'], GameView> = {
 let canvas: HTMLCanvasElement;
 let ctx: CanvasRenderingContext2D;
 let lastCount = -1;
+let vignette: HTMLCanvasElement | null = null;
+
+function makeVignette(w: number, h: number): void {
+  vignette = document.createElement('canvas');
+  vignette.width = Math.max(2, Math.floor(w / 2));
+  vignette.height = Math.max(2, Math.floor(h / 2));
+  const vc = vignette.getContext('2d')!;
+  const g = vc.createRadialGradient(
+    vignette.width / 2,
+    vignette.height / 2,
+    Math.min(vignette.width, vignette.height) * 0.42,
+    vignette.width / 2,
+    vignette.height / 2,
+    Math.max(vignette.width, vignette.height) * 0.78
+  );
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(5,10,20,0.42)');
+  vc.fillStyle = g;
+  vc.fillRect(0, 0, vignette.width, vignette.height);
+}
 
 export function initRenderer(c: HTMLCanvasElement): void {
   canvas = c;
@@ -36,6 +57,7 @@ export function initRenderer(c: HTMLCanvasElement): void {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.width = Math.floor(canvas.clientWidth * dpr);
     canvas.height = Math.floor(canvas.clientHeight * dpr);
+    makeVignette(canvas.clientWidth, canvas.clientHeight);
   };
   resize();
   window.addEventListener('resize', resize);
@@ -103,6 +125,10 @@ function frame(now: number): void {
       if (left === 0) sfx.gong();
     }
     txt(ctx, game.card?.title ?? '', w / 2, h * 0.32, 34, '#ffd98a');
-    txt(ctx, left > 0 ? String(left) : 'GO!', w / 2, h * 0.5, 110, '#fff3b0');
+    const pulse = 1 + (phaseSecondsLeft() % 1) * 0.18;
+    txt(ctx, left > 0 ? String(left) : 'GO!', w / 2, h * 0.5, 110 * pulse, '#fff3b0');
   }
+
+  drawFx(ctx);
+  if (vignette) ctx.drawImage(vignette, 0, 0, w, h);
 }

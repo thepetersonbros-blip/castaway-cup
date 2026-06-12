@@ -85,6 +85,37 @@ function tryStep(m: Mover, fits: (cx: number, cy: number) => boolean): boolean {
   return false;
 }
 
+// A charging elephant doesn't go around boulders. It goes THROUGH them.
+function smashStep(st: St, e: Elephant): boolean {
+  if (e.dx === 0 && e.dy === 0) return false;
+  const horizFirst = Math.abs(e.dx) >= Math.abs(e.dy);
+  const sx = horizFirst ? Math.sign(e.dx) : 0;
+  const sy = horizFirst ? 0 : Math.sign(e.dy);
+  if (sx === 0 && sy === 0) return false;
+  const nx = e.cx + sx;
+  const ny = e.cy + sy;
+  if (nx < 0 || ny < 0 || nx + 1 >= W || ny + 1 >= H) return false;
+  // another elephant is not smashable
+  for (const other of st.elephants.values()) {
+    if (other === e) continue;
+    if (Math.abs(other.cx - nx) < 2 && Math.abs(other.cy - ny) < 2) return false;
+  }
+  let smashed = 0;
+  for (let dy = 0; dy < 2; dy++) {
+    for (let dx = 0; dx < 2; dx++) {
+      const k = key(nx + dx, ny + dy);
+      if (st.rocks.has(k)) {
+        st.rocks.delete(k);
+        smashed++;
+      }
+    }
+  }
+  if (smashed === 0) return false;
+  e.cx = nx;
+  e.cy = ny;
+  return true;
+}
+
 function squashCheck(ctx: Ctx, st: St): void {
   for (const [eSlot, e] of st.elephants) {
     for (const [hSlot, h] of st.humans) {
@@ -156,7 +187,7 @@ export const stampede: Challenge = {
   title: 'THE STAMPEDE',
   tagline: 'Two elephants. Nowhere to hide.',
   howTo:
-    'Two castaways ride ELEPHANTS: huge (4 squares!), slow, and angry, with a CHARGE button for a burst of speed. Everyone else is on foot: small, quick, and able to squeeze through gaps elephants cannot. Get stepped on and you are a pancake. Squashing scores, surviving scores, and everyone gets one round on elephant-back. Hold to run, A/D/W/S works too.',
+    'Two castaways ride ELEPHANTS: huge (4 squares!), slow, and angry, with a CHARGE button for a burst of speed that SMASHES THROUGH BOULDERS. Everyone else is on foot: small, quick, and able to slip past rocks elephants cannot. Get stepped on and you are a pancake. Squashing scores, surviving scores, and everyone gets one round on elephant-back. Hold to run, A/D/W/S works too.',
   maxTicks: 99999,
 
   init(ctx: Ctx): void {
@@ -196,8 +227,11 @@ export const stampede: Challenge = {
         if (e.charging > 0) e.charging--;
         if (e.chargeCd > 0) e.chargeCd--;
         if (e.stepCd > 0) e.stepCd--;
-        if (e.stepCd <= 0 && tryStep(e, (cx, cy) => elephantFits(st, cx, cy, e))) {
-          e.stepCd = e.charging > 0 ? STAMPEDE.chargeStep : STAMPEDE.elephantStep;
+        if (e.stepCd <= 0) {
+          const moved =
+            tryStep(e, (cx, cy) => elephantFits(st, cx, cy, e)) ||
+            (e.charging > 0 && smashStep(st, e));
+          if (moved) e.stepCd = e.charging > 0 ? STAMPEDE.chargeStep : STAMPEDE.elephantStep;
         }
       }
       for (const h of st.humans.values()) {
