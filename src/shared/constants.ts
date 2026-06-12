@@ -107,6 +107,22 @@ export const GATHER = {
   pts: { berry: 1, coconut: 2, pine: 5 }
 };
 
+export const STAMPEDE = {
+  gridW: 22,
+  gridH: 13,
+  roundTicks: sec(40),
+  betweenTicks: sec(3.5),
+  humanStep: 5, // ticks per cell (4 cells/s)
+  elephantStep: 11, // big and slow (~1.8 cells/s)
+  chargeStep: 4, // during a charge: faster than a human
+  chargeTicks: sec(1.2),
+  chargeCd: sec(5),
+  rocks: 14,
+  squashPts: 3,
+  surviveBonus: 3,
+  alivePtsEvery: sec(8) // +1 just for staying alive
+};
+
 export const TYPE = {
   rounds: 10,
   roundTicks: sec(12), // time limit per word

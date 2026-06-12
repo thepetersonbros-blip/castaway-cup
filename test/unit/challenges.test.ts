@@ -11,8 +11,9 @@ import { memory } from '../../src/server/challenges/memory';
 import { idol } from '../../src/server/challenges/idol';
 import { gather } from '../../src/server/challenges/gather';
 import { type as typeGame } from '../../src/server/challenges/type';
+import { stampede } from '../../src/server/challenges/stampede';
 import { rankRows } from '../../src/server/season';
-import { GATHER, TYPE } from '../../src/shared/constants';
+import { GATHER, STAMPEDE, TYPE } from '../../src/shared/constants';
 
 function mkCtx(slots: number[], seed = 7): Ctx {
   return { t: 0, rand: mulberry32(seed), slots, connected: () => true, priv: null, pub: null };
@@ -318,6 +319,89 @@ describe('type (message in a bottle)', () => {
     const rows = rankRows(typeGame.result(ctx));
     expect(rows[0].slot).toBe(0);
     expect(rows[2].slot).toBe(2);
+  });
+});
+
+describe('stampede', () => {
+  it('every castaway rides an elephant exactly once', () => {
+    const ctx = mkCtx([0, 1, 2, 3, 4, 5]);
+    stampede.init(ctx);
+    const st = ctx.priv as any;
+    expect(st.pairs.length).toBe(3);
+    expect(st.pairs.flat().sort()).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+
+  it('humans outrun elephants in the open', () => {
+    const ctx = mkCtx([0, 1, 2]);
+    stampede.init(ctx);
+    const st = ctx.priv as any;
+    st.rocks = new Set();
+    const eSlot = st.pairs[0][0] as number;
+    const hSlot = [0, 1, 2].find((s) => s !== eSlot)!;
+    const e = st.elephants.get(eSlot);
+    const hu = st.humans.get(hSlot);
+    e.cx = 2;
+    e.cy = 2;
+    hu.cx = 2;
+    hu.cy = 9;
+    stampede.input(ctx, eSlot, { g: 'stampede', dx: 1, dy: 0 });
+    stampede.input(ctx, hSlot, { g: 'stampede', dx: 1, dy: 0 });
+    step(ctx, stampede, 60);
+    expect(hu.cx - 2).toBeGreaterThan((e.cx - 2) * 1.5);
+  });
+
+  it('getting stepped on pancakes you and pays the elephant', () => {
+    const ctx = mkCtx([0, 1, 2]);
+    stampede.init(ctx);
+    const st = ctx.priv as any;
+    st.rocks = new Set();
+    const eSlot = st.pairs[0][0] as number;
+    const hSlot = [0, 1, 2].find((s) => s !== eSlot)!;
+    const e = st.elephants.get(eSlot);
+    const hu = st.humans.get(hSlot);
+    e.cx = 5;
+    e.cy = 5;
+    hu.cx = 8;
+    hu.cy = 6;
+    hu.dx = 0;
+    hu.dy = 0;
+    stampede.input(ctx, eSlot, { g: 'stampede', dx: 1, dy: 0 });
+    step(ctx, stampede, 60);
+    expect(hu.alive).toBe(false);
+    expect(st.score[eSlot]).toBe(STAMPEDE.squashPts);
+  });
+
+  it('a one-cell gap lets humans through and stops elephants', () => {
+    const ctx = mkCtx([0, 1, 2]);
+    stampede.init(ctx);
+    const st = ctx.priv as any;
+    // a wall down column 10 with a single gap at row 6
+    st.rocks = new Set();
+    for (let row = 0; row < STAMPEDE.gridH; row++) {
+      if (row !== 6) st.rocks.add(row * STAMPEDE.gridW + 10);
+    }
+    const eSlot = st.pairs[0][0] as number;
+    const hSlot = [0, 1, 2].find((s) => s !== eSlot)!;
+    const e = st.elephants.get(eSlot);
+    const hu = st.humans.get(hSlot);
+    e.cx = 4;
+    e.cy = 5;
+    hu.cx = 7;
+    hu.cy = 6;
+    stampede.input(ctx, eSlot, { g: 'stampede', dx: 1, dy: 0 });
+    stampede.input(ctx, hSlot, { g: 'stampede', dx: 1, dy: 0 });
+    step(ctx, stampede, 120);
+    expect(hu.cx).toBeGreaterThan(10); // slipped through the gap
+    expect(e.cx).toBeLessThanOrEqual(8); // too wide, no crossing
+  });
+
+  it('flattening everyone ends the round early', () => {
+    const ctx = mkCtx([0, 1, 2]);
+    stampede.init(ctx);
+    const st = ctx.priv as any;
+    for (const h of st.humans.values()) h.alive = false;
+    step(ctx, stampede, 2);
+    expect(st.mode).toBe('between');
   });
 });
 

@@ -10,7 +10,8 @@ export type ChallengeKey =
   | 'memory'
   | 'idol'
   | 'gather'
-  | 'type';
+  | 'type'
+  | 'stampede';
 
 export type FoodKind = 'berry' | 'coconut' | 'pine';
 
@@ -33,7 +34,8 @@ export type PlayMsg =
   | { g: 'memory'; tile: number }
   | { g: 'idol' } // grab
   | { g: 'gather'; dx: number; dy: number } // held movement direction, (0,0) = stop
-  | { g: 'type'; word: string }; // a typed attempt at the current word
+  | { g: 'type'; word: string } // a typed attempt at the current word
+  | { g: 'stampede'; dx?: number; dy?: number; charge?: boolean };
 
 export type LobbyMsg =
   | { type: 'color'; color: number }
@@ -107,6 +109,19 @@ export interface TypePub {
   players: { slot: number; score: number; done: boolean; ms: number | null }[];
 }
 
+export interface StampedePub {
+  g: 'stampede';
+  mode: 'play' | 'between';
+  round: number; // 1-based
+  rounds: number;
+  left: number;
+  rocks: [number, number][];
+  elephants: { slot: number; cx: number; cy: number; charging: boolean; cdLeft: number }[];
+  humans: { slot: number; cx: number; cy: number; alive: boolean }[];
+  nextElephants: number[]; // shown during 'between'
+  scores: { slot: number; score: number }[];
+}
+
 export type ChallengePub =
   | FirePub
   | FishPub
@@ -115,7 +130,8 @@ export type ChallengePub =
   | MemoryPub
   | IdolPub
   | GatherPub
-  | TypePub;
+  | TypePub
+  | StampedePub;
 
 // ---------- server -> client ----------
 

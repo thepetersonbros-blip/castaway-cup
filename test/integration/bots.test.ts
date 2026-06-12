@@ -79,7 +79,7 @@ describe('six castaways online', () => {
     // through countdown into the first challenge (about 12 seconds)
     await waitFor(() => bots[3].snaps.length > 3, 'snapshots flowing', 20000);
     const g = bots[3].snaps.at(-1)!.state.g;
-    expect(['fire', 'fish', 'balance', 'climb', 'memory', 'idol', 'gather', 'type']).toContain(g);
+    expect(['fire', 'fish', 'balance', 'climb', 'memory', 'idol', 'gather', 'type', 'stampede']).toContain(g);
   });
 
   it('inputs reach the game without breaking anything', async () => {
@@ -100,7 +100,9 @@ describe('six castaways online', () => {
                   ? { g, dx: 1, dy: 0 }
                   : g === 'type'
                     ? { g, word: 'coconut' }
-                    : { g };
+                    : g === 'stampede'
+                      ? { g, dx: 1, dy: 0 }
+                      : { g };
       for (let i = 0; i < 5; i++) b.sock.emit('play', msg);
     }
     await sleep(600);

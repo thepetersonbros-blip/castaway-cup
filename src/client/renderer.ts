@@ -10,6 +10,7 @@ import { memoryView } from './games/memoryView';
 import { idolView } from './games/idolView';
 import { gatherView } from './games/gatherView';
 import { hideTypeInput, typeView } from './games/typeView';
+import { stampedeView } from './games/stampedeView';
 import { sfx } from './audio';
 
 const VIEWS: Record<ChallengePub['g'], GameView> = {
@@ -20,7 +21,8 @@ const VIEWS: Record<ChallengePub['g'], GameView> = {
   memory: memoryView,
   idol: idolView,
   gather: gatherView,
-  type: typeView
+  type: typeView,
+  stampede: stampedeView
 };
 
 let canvas: HTMLCanvasElement;
