@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#1a2a3a" />
+<title>Castaway Cup</title>
+<style>
+  :root {
+    --night: #152433;
+    --panel: #1f3447;
+    --panel2: #2a4660;
+    --ink: #f4ecd8;
+    --dim: #9fb3bf;
+    --sun: #ffb84d;
+    --flame: #ff7846;
+    --sea: #2fb3a8;
+    --danger: #e8443a;
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; background: var(--night); color: var(--ink);
+    font-family: "Segoe UI", system-ui, sans-serif; overflow: hidden;
+    overscroll-behavior: none; height: 100dvh;
+  }
+  #game { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; }
+  #ui { position: fixed; inset: 0; pointer-events: none; }
+  #ui > * { pointer-events: auto; }
+
+  .screen {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 14px; overflow-y: auto;
+    background: linear-gradient(180deg, #ff9d4d 0%, #e8645a 28%, #7a4a7a 55%, #1a2a3a 80%);
+    padding: calc(16px + var(--sat)) 16px calc(16px + var(--sab));
+  }
+  .screen::before {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 34%;
+    background: linear-gradient(180deg, transparent, #0d1822 60%); pointer-events: none;
+  }
+  .screen > * { z-index: 1; }
+  .title {
+    font-size: clamp(34px, 8vw, 58px); font-weight: 900; letter-spacing: 3px; text-align: center;
+    color: var(--sun); text-shadow: 0 3px 0 #8a4a10, 0 8px 24px #00000088;
+  }
+  .subtitle { color: #ffe8c8; margin-top: -8px; text-align: center; text-shadow: 0 2px 6px #0008; }
+  .card {
+    background: #1f3447ee; border: 2px solid #3a5a78; border-radius: 16px; padding: 18px;
+    width: min(460px, 94vw); display: flex; flex-direction: column; gap: 12px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.55);
+  }
+  input[type=text] {
+    background: #142433; color: var(--ink); border: 2px solid #3a5a78; border-radius: 8px;
+    padding: 12px; font-size: 18px; width: 100%; outline: none;
+  }
+  input.code { text-transform: uppercase; letter-spacing: 8px; font-weight: 800; text-align: center; }
+  button {
+    background: var(--sun); color: #4a2800; font-weight: 800; border: 0; border-radius: 10px;
+    padding: 12px 18px; font-size: 17px; cursor: pointer; touch-action: manipulation;
+  }
+  button.secondary { background: var(--panel2); color: var(--ink); border: 2px solid #46688a; }
+  button:disabled { opacity: .45; cursor: default; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .hats { display: flex; gap: 8px; flex-wrap: wrap; }
+  .hat { width: 36px; height: 36px; border-radius: 50%; border: 3px solid #0008; cursor: pointer; }
+  .hat.sel { border-color: #fff; box-shadow: 0 0 0 3px var(--sun); }
+  .hat.taken { opacity: .25; cursor: default; }
+  .err { color: #ffb0a8; min-height: 20px; font-size: 14px; text-align: center; }
+  .hint { color: var(--dim); font-size: 13.5px; line-height: 1.5; }
+  .codebig { font-size: 40px; letter-spacing: 12px; font-weight: 900; color: var(--sun); text-align: center; }
+  .roster { display: flex; flex-direction: column; gap: 6px; }
+  .roster .p { display: flex; align-items: center; gap: 10px; background: #142433; border-radius: 8px; padding: 8px 10px; }
+  .chip { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #0008; flex: none; }
+  .roster .nm { flex: 1; font-weight: 600; }
+  .roster .tag { font-size: 12px; color: var(--dim); }
+
+  .overlay {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 14px; background: #10202ef2;
+    padding: calc(14px + var(--sat)) 14px calc(14px + var(--sab)); overflow-y: auto; z-index: 30;
+  }
+  .bigbanner { font-size: clamp(26px, 6.5vw, 46px); font-weight: 900; text-align: center; }
+  .gamecard { text-align: center; max-width: 560px; }
+  .gamecard .gt { font-size: clamp(30px, 7vw, 50px); font-weight: 900; color: var(--sun); letter-spacing: 2px; }
+  .gamecard .tag2 { font-size: 18px; color: var(--flame); font-weight: 700; margin: 4px 0 12px; }
+  .gamecard .how { font-size: 16.5px; line-height: 1.55; background: #1f3447; border: 2px solid #3a5a78;
+    border-radius: 14px; padding: 14px 16px; }
+  .gamecard .which { color: var(--dim); margin-top: 10px; font-weight: 700; letter-spacing: 2px; }
+  .count { font-size: 110px; font-weight: 900; color: var(--sun); text-shadow: 0 6px 30px #000; }
+
+  table.res { border-collapse: collapse; background: var(--panel); border-radius: 12px; overflow: hidden; font-size: 15.5px; min-width: min(480px, 92vw); }
+  table.res th, table.res td { padding: 9px 12px; text-align: center; }
+  table.res th { background: var(--panel2); color: var(--dim); font-size: 12px; letter-spacing: 1px; }
+  table.res td.nm { text-align: left; font-weight: 700; }
+  table.res tr.me { outline: 2px solid var(--sun); }
+  .pts { color: var(--sun); font-weight: 900; }
+
+  .torchrow { display: flex; align-items: center; gap: 10px; width: min(520px, 92vw); }
+  .torchrow .nm { width: 110px; text-align: right; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .torchbar { flex: 1; height: 26px; background: #142433; border-radius: 8px; overflow: hidden; position: relative; }
+  .torchbar > div { height: 100%; border-radius: 8px; transition: width 1.2s cubic-bezier(.2,.8,.2,1); display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; font-weight: 900; color: #00000088; }
+  .crown { font-size: 64px; }
+  #curtain {
+    position: absolute; inset: 0; display: none; flex-direction: column; align-items: center;
+    justify-content: center; gap: 12px; background: #152433ee; text-align: center; z-index: 50;
+  }
+  #curtain.on { display: flex; }
+  .spin { width: 38px; height: 38px; border: 4px solid #3a5a78; border-top-color: var(--sun); border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast {
+    position: absolute; top: calc(54px + var(--sat)); left: 50%; transform: translateX(-50%);
+    background: #142433dd; border: 1px solid #3a5a78; padding: 6px 12px; border-radius: 8px;
+    font-size: 14px; transition: opacity .4s; z-index: 40; pointer-events: none;
+  }
+  #topbar {
+    position: absolute; top: calc(6px + var(--sat)); left: 50%; transform: translateX(-50%);
+    display: none; gap: 12px; align-items: center; background: #142433cc; border: 1px solid #3a5a78;
+    border-radius: 10px; padding: 6px 14px; z-index: 10; font-weight: 700;
+  }
+  #topbar.on { display: flex; }
+  #topbar .t { color: var(--sun); }
+</style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="ui"></div>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>
