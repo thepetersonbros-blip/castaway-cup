@@ -9,6 +9,7 @@ import { idol } from './idol';
 import { gather } from './gather';
 import { type } from './type';
 import { stampede } from './stampede';
+import { shove } from './shove';
 
 export const CHALLENGES: Record<ChallengeKey, Challenge> = {
   fire,
@@ -19,7 +20,8 @@ export const CHALLENGES: Record<ChallengeKey, Challenge> = {
   idol,
   gather,
   type,
-  stampede
+  stampede,
+  shove
 };
 
 export const CHALLENGE_KEYS: ChallengeKey[] = [
@@ -31,5 +33,6 @@ export const CHALLENGE_KEYS: ChallengeKey[] = [
   'idol',
   'gather',
   'type',
-  'stampede'
+  'stampede',
+  'shove'
 ];

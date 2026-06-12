@@ -127,6 +127,35 @@ export const STAMPEDE = {
   alivePtsEvery: sec(8) // +1 just for staying alive
 };
 
+export const SHOVE = {
+  rounds: 3,
+  betweenTicks: sec(3.5),
+  maxRoundTicks: sec(75),
+  arena: 24, // world units square; the rock sits in the middle
+  platformR0: 9,
+  platformRMin: 3.2,
+  shrinkStart: sec(8),
+  shrinkTicks: sec(45),
+  speed: 0.22,
+  bodyR: 0.7,
+  contactPush: 0.014, // per tick of leaning into someone; gang-ups stack
+  velDecay: 0.86,
+  bumpCd: sec(1.5),
+  bumpRange: 1.6,
+  bumpKick: 0.5,
+  chargeCd: sec(6),
+  chargeTicks: 14,
+  chargeSpeed: 0.5,
+  chargeKick: 0.95,
+  staggerTicks: sec(1),
+  dodgeCd: sec(3),
+  dodgeTicks: 11,
+  dodgeStep: 1.6,
+  koPts: 2,
+  surviveBonus: 2,
+  creditTicks: sec(2.5)
+};
+
 export const TYPE = {
   rounds: 10,
   roundTicks: sec(12), // time limit per word

@@ -11,6 +11,7 @@ import { idolView } from './games/idolView';
 import { gatherView } from './games/gatherView';
 import { hideTypeInput, typeView } from './games/typeView';
 import { stampedeView } from './games/stampedeView';
+import { shoveView } from './games/shoveView';
 import { drawFx } from './fx';
 import { sfx } from './audio';
 
@@ -23,7 +24,8 @@ const VIEWS: Record<ChallengePub['g'], GameView> = {
   idol: idolView,
   gather: gatherView,
   type: typeView,
-  stampede: stampedeView
+  stampede: stampedeView,
+  shove: shoveView
 };
 
 let canvas: HTMLCanvasElement;

@@ -19,7 +19,8 @@ export type ChallengeKey =
   | 'idol'
   | 'gather'
   | 'type'
-  | 'stampede';
+  | 'stampede'
+  | 'shove';
 
 export type FoodKind = 'berry' | 'coconut' | 'pine';
 
@@ -43,7 +44,8 @@ export type PlayMsg =
   | { g: 'idol' } // grab
   | { g: 'gather'; dx: number; dy: number } // held movement direction, (0,0) = stop
   | { g: 'type'; word: string } // a typed attempt at the current word
-  | { g: 'stampede'; dx?: number; dy?: number; charge?: boolean };
+  | { g: 'stampede'; dx?: number; dy?: number; charge?: boolean }
+  | { g: 'shove'; dx?: number; dy?: number; a?: 'bump' | 'charge' | 'dodge' };
 
 export type LobbyMsg =
   | { type: 'color'; color: number }
@@ -134,6 +136,29 @@ export interface StampedePub {
   scores: { slot: number; score: number }[];
 }
 
+export interface ShovePub {
+  g: 'shove';
+  mode: 'play' | 'between';
+  round: number;
+  rounds: number;
+  left: number;
+  radius: number; // current platform radius
+  players: {
+    slot: number;
+    x: number;
+    y: number;
+    fx: number; // facing unit vector
+    fy: number;
+    out: boolean;
+    outBy: number; // slot that shoved them in, -1 if nobody
+    charging: boolean;
+    dodging: boolean;
+    stagger: boolean;
+    cds: { bump: number; charge: number; dodge: number };
+  }[];
+  scores: { slot: number; score: number; kos: number }[];
+}
+
 export type ChallengePub =
   | FirePub
   | FishPub
@@ -143,7 +168,8 @@ export type ChallengePub =
   | IdolPub
   | GatherPub
   | TypePub
-  | StampedePub;
+  | StampedePub
+  | ShovePub;
 
 // ---------- server -> client ----------
 

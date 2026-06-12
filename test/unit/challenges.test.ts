@@ -12,8 +12,9 @@ import { idol } from '../../src/server/challenges/idol';
 import { gather } from '../../src/server/challenges/gather';
 import { type as typeGame } from '../../src/server/challenges/type';
 import { stampede } from '../../src/server/challenges/stampede';
+import { shove } from '../../src/server/challenges/shove';
 import { rankRows } from '../../src/server/season';
-import { GATHER, STAMPEDE, TYPE } from '../../src/shared/constants';
+import { GATHER, SHOVE, STAMPEDE, TYPE } from '../../src/shared/constants';
 
 function mkCtx(slots: number[], seed = 7): Ctx {
   return { t: 0, rand: mulberry32(seed), slots, connected: () => true, priv: null, pub: null };
@@ -479,6 +480,103 @@ describe('stampede', () => {
     for (const h of st.humans.values()) h.alive = false;
     step(ctx, stampede, 2);
     expect(st.mode).toBe('between');
+  });
+});
+
+describe('shove (off the rock)', () => {
+  const A = SHOVE.arena / 2; // platform center
+
+  it('leaning into someone pushes them, and two pushers push harder', () => {
+    const run = (pushers: number[]): number => {
+      const ctx = mkCtx([0, 1, 2]);
+      shove.init(ctx);
+      const st = ctx.priv as any;
+      // park everyone far away first
+      for (const s of [0, 1, 2]) Object.assign(st.p[s], { x: A - 6, y: A - 6, dx: 0, dy: 0 });
+      Object.assign(st.p[2], { x: A, y: A });
+      pushers.forEach((s, i) => {
+        Object.assign(st.p[s], { x: A - 1.2, y: A + (i === 0 ? -0.4 : 0.4) });
+        shove.input(ctx, s, { g: 'shove', dx: 1, dy: 0 });
+      });
+      step(ctx, shove, 14);
+      return st.p[2].x - A;
+    };
+    const one = run([0]);
+    const two = run([0, 1]);
+    expect(one).toBeGreaterThan(0.05);
+    expect(two).toBeGreaterThan(one * 1.4);
+  });
+
+  it('bump shoves, charge launches', () => {
+    const ctx = mkCtx([0, 1]);
+    shove.init(ctx);
+    const st = ctx.priv as any;
+    Object.assign(st.p[0], { x: A - 1.2, y: A, fx: 1, fy: 0 });
+    Object.assign(st.p[1], { x: A, y: A });
+    shove.input(ctx, 0, { g: 'shove', a: 'bump' });
+    expect(st.p[1].vx).toBeCloseTo(SHOVE.bumpKick, 3);
+    expect(st.p[0].bumpCd).toBeGreaterThan(0);
+    // charge from farther out lands a much bigger hit
+    const ctx2 = mkCtx([0, 1]);
+    shove.init(ctx2);
+    const st2 = ctx2.priv as any;
+    Object.assign(st2.p[0], { x: A - 3, y: A, fx: 1, fy: 0 });
+    Object.assign(st2.p[1], { x: A, y: A, dx: 0, dy: 0 });
+    shove.input(ctx2, 0, { g: 'shove', a: 'charge' });
+    step(ctx2, shove, 8);
+    expect(st2.p[1].vx).toBeGreaterThan(SHOVE.bumpKick);
+    expect(st2.p[0].charging).toBe(0); // the hit ends the charge
+  });
+
+  it('a timed dodge counters the charge: sidestep + stagger', () => {
+    const ctx = mkCtx([0, 1]);
+    shove.init(ctx);
+    const st = ctx.priv as any;
+    Object.assign(st.p[0], { x: A - 3, y: A, fx: 1, fy: 0 });
+    Object.assign(st.p[1], { x: A, y: A, dx: 0, dy: 0 });
+    shove.input(ctx, 0, { g: 'shove', a: 'charge' });
+    shove.input(ctx, 1, { g: 'shove', a: 'dodge' });
+    step(ctx, shove, 8);
+    expect(st.p[0].stagger).toBeGreaterThan(0); // the charger stumbles
+    expect(Math.abs(st.p[1].y - A)).toBeGreaterThan(0.8); // the dodger sidestepped
+    expect(Math.abs(st.p[1].vx)).toBeLessThan(0.2); // and took no real hit
+    expect(st.p[0].lastHitBy).toBe(1); // if they fall, the dodger gets credit
+  });
+
+  it('the sea eliminates, credits the shover, and the survivor banks the round', () => {
+    const ctx = mkCtx([0, 1]);
+    shove.init(ctx);
+    const st = ctx.priv as any;
+    const edge = A + SHOVE.platformR0 - 0.9;
+    Object.assign(st.p[0], { x: edge - 2.4, y: A, fx: 1, fy: 0 });
+    Object.assign(st.p[1], { x: edge, y: A, dx: 0, dy: 0 });
+    shove.input(ctx, 0, { g: 'shove', a: 'charge' });
+    let guard = 0;
+    while (!st.p[1].out && guard++ < 200) step(ctx, shove, 1);
+    expect(st.p[1].out).toBe(true);
+    expect(st.p[1].outBy).toBe(0);
+    expect(st.kos[0]).toBe(1);
+    step(ctx, shove, 2);
+    expect(st.mode).toBe('between');
+    expect(st.score[0]).toBe(SHOVE.koPts + 1 + SHOVE.surviveBonus);
+    const rows = rankRows(shove.result(ctx));
+    expect(rows[0].slot).toBe(0);
+  });
+
+  it('the rock shrinks until the tide forces an ending', () => {
+    const ctx = mkCtx([0, 1]);
+    shove.init(ctx);
+    const st = ctx.priv as any;
+    // both castaways idle at a mid radius: the water comes to THEM
+    Object.assign(st.p[0], { x: A + 5, y: A, dx: 0, dy: 0 });
+    Object.assign(st.p[1], { x: A - 5, y: A, dx: 0, dy: 0 });
+    let radiusAtOut = -1;
+    for (let i = 0; i < SHOVE.shrinkStart + SHOVE.shrinkTicks + 50 && radiusAtOut < 0; i++) {
+      step(ctx, shove, 1);
+      if (st.p[0].out || st.p[1].out) radiusAtOut = (ctx.pub as any).radius;
+    }
+    expect(radiusAtOut).toBeGreaterThan(0); // the tide really did reach them
+    expect(radiusAtOut).toBeLessThan(5.1); // and only once the rock shrank to their feet
   });
 });
 

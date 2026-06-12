@@ -39,7 +39,7 @@ test('three castaways run a season opener', async ({ browser }) => {
   await a.waitForFunction(() => window.__game.phase === 'playing', undefined, { timeout: 25000 });
   await b.waitForFunction(() => window.__game.phase === 'playing', undefined, { timeout: 25000 });
   const g = await a.evaluate(() => window.__game.state?.g);
-  expect(['fire', 'fish', 'balance', 'climb', 'memory', 'idol', 'gather', 'type', 'stampede']).toContain(g);
+  expect(['fire', 'fish', 'balance', 'climb', 'memory', 'idol', 'gather', 'type', 'stampede', 'shove']).toContain(g);
   // everyone sees the same game
   expect(await b.evaluate(() => window.__game.state?.g)).toBe(g);
 

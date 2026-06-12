@@ -56,6 +56,20 @@ test('gallery: stampede', async ({ browser }) => {
   for (const x of ctxs) await x.close();
 });
 
+test('gallery: shove', async ({ browser }) => {
+  const ctxs = await Promise.all([browser.newContext(), browser.newContext()]);
+  const [a, b] = await Promise.all(ctxs.map((x) => x.newPage()));
+  await startGame(a, b, 'shove');
+  await a.keyboard.down('d');
+  await b.keyboard.down('a');
+  await a.waitForTimeout(1500);
+  await a.keyboard.press('e'); // charge!
+  await b.keyboard.press('q'); // dodge!
+  await a.waitForTimeout(700);
+  await a.screenshot({ path: 'test-results/g-shove.png' });
+  for (const x of ctxs) await x.close();
+});
+
 test('gallery: gather', async ({ browser }) => {
   const ctxs = await Promise.all([browser.newContext(), browser.newContext()]);
   const [a, b] = await Promise.all(ctxs.map((x) => x.newPage()));
