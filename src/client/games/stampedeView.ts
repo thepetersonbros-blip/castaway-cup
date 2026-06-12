@@ -48,8 +48,8 @@ function easeTo(slot: number, tx: number, ty: number): { x: number; y: number } 
     e = { x: tx, y: ty };
     eased.set(slot, e);
   }
-  e.x += (tx - e.x) * 0.3;
-  e.y += (ty - e.y) * 0.3;
+  e.x += (tx - e.x) * 0.42;
+  e.y += (ty - e.y) * 0.42;
   return e;
 }
 

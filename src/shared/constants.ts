@@ -114,12 +114,14 @@ export const STAMPEDE = {
   gridH: 13,
   roundTicks: sec(40),
   betweenTicks: sec(3.5),
-  humanStep: 5, // ticks per cell (4 cells/s)
-  elephantStep: 11, // big and slow (~1.8 cells/s)
-  chargeStep: 4, // during a charge: faster than a human
+  humanStep: 4, // ticks per cell (5 cells/s)
+  elephantStep: 10, // big and slow (2 cells/s)
+  chargeStep: 3, // during a charge: faster than a human
   chargeTicks: sec(1.2),
   chargeCd: sec(5),
-  rocks: 14,
+  rocks: 6, // few and far between
+  rockSpacing: 4, // min cells between rocks: no elephant-proof pockets
+  rockMargin: 3, // min cells from the wall, same reason
   squashPts: 3,
   surviveBonus: 3,
   alivePtsEvery: sec(8) // +1 just for staying alive

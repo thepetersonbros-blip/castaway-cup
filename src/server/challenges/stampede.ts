@@ -61,8 +61,9 @@ function humanFits(st: St, cx: number, cy: number): boolean {
 }
 
 // Held direction -> one 4-way grid step, sliding to the other axis if blocked.
-function tryStep(m: Mover, fits: (cx: number, cy: number) => boolean): void {
-  if (m.dx === 0 && m.dy === 0) return;
+// Returns true only if the mover actually moved.
+function tryStep(m: Mover, fits: (cx: number, cy: number) => boolean): boolean {
+  if (m.dx === 0 && m.dy === 0) return false;
   const horizFirst = Math.abs(m.dx) >= Math.abs(m.dy);
   const opts: [number, number][] = horizFirst
     ? [
@@ -78,9 +79,10 @@ function tryStep(m: Mover, fits: (cx: number, cy: number) => boolean): void {
     if (fits(m.cx + sx, m.cy + sy)) {
       m.cx += sx;
       m.cy += sy;
-      return;
+      return true;
     }
   }
+  return false;
 }
 
 function squashCheck(ctx: Ctx, st: St): void {
@@ -101,18 +103,23 @@ function setupRound(ctx: Ctx, st: St): void {
   st.elephants = new Map();
   st.humans = new Map();
   const elephants = st.pairs[st.roundIdx] ?? [];
-  // rocks: fresh scatter each round, clear of spawn zones
+  // rocks: few and far between. Spacing from each other AND the walls is
+  // enforced, so the arena can never grow a pocket an elephant can't reach
+  // into: rocks are dodge tools, not apartments.
   st.rocks = new Set();
+  const rockCells: [number, number][] = [];
   let placed = 0;
   let attempts = 0;
-  while (placed < STAMPEDE.rocks && attempts++ < 300) {
-    const cx = 1 + Math.floor(ctx.rand() * (W - 2));
-    const cy = 1 + Math.floor(ctx.rand() * (H - 2));
+  while (placed < STAMPEDE.rocks && attempts++ < 400) {
+    const cx = STAMPEDE.rockMargin + Math.floor(ctx.rand() * (W - STAMPEDE.rockMargin * 2));
+    const cy = STAMPEDE.rockMargin + Math.floor(ctx.rand() * (H - STAMPEDE.rockMargin * 2));
     const nearCenter = Math.abs(cx - W / 2) < 4 && Math.abs(cy - H / 2) < 3;
-    const nearCorner =
-      (cx < 4 || cx > W - 5) && (cy < 4 || cy > H - 5);
-    if (nearCenter || nearCorner || st.rocks.has(key(cx, cy))) continue;
+    const tooClose = rockCells.some(
+      ([ox, oy]) => Math.max(Math.abs(ox - cx), Math.abs(oy - cy)) < STAMPEDE.rockSpacing
+    );
+    if (nearCenter || tooClose) continue;
     st.rocks.add(key(cx, cy));
+    rockCells.push([cx, cy]);
     placed++;
   }
   elephants.forEach((slot, i) => {
@@ -183,18 +190,20 @@ export const stampede: Challenge = {
     const elapsed = ctx.t - st.modeAt;
 
     if (st.mode === 'play') {
+      // The step timer only re-arms when a step actually happens, so the
+      // FIRST step after standing still fires instantly. Feels snappy.
       for (const e of st.elephants.values()) {
         if (e.charging > 0) e.charging--;
         if (e.chargeCd > 0) e.chargeCd--;
-        if (--e.stepCd <= 0) {
-          tryStep(e, (cx, cy) => elephantFits(st, cx, cy, e));
+        if (e.stepCd > 0) e.stepCd--;
+        if (e.stepCd <= 0 && tryStep(e, (cx, cy) => elephantFits(st, cx, cy, e))) {
           e.stepCd = e.charging > 0 ? STAMPEDE.chargeStep : STAMPEDE.elephantStep;
         }
       }
       for (const h of st.humans.values()) {
         if (!h.alive) continue;
-        if (--h.stepCd <= 0) {
-          tryStep(h, (cx, cy) => humanFits(st, cx, cy));
+        if (h.stepCd > 0) h.stepCd--;
+        if (h.stepCd <= 0 && tryStep(h, (cx, cy) => humanFits(st, cx, cy))) {
           h.stepCd = STAMPEDE.humanStep;
         }
       }

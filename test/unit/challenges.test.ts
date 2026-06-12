@@ -406,6 +406,51 @@ describe('stampede', () => {
     expect(e.cx).toBeLessThanOrEqual(8); // too wide, no crossing
   });
 
+  it('rocks are few, far apart, and away from walls (no hiding pockets)', () => {
+    for (const seed of [1, 7, 42, 99, 1234]) {
+      const ctx = mkCtx([0, 1, 2, 3, 4, 5], seed);
+      stampede.init(ctx);
+      const st = ctx.priv as any;
+      const cells: [number, number][] = [...st.rocks].map((k: number) => [
+        k % STAMPEDE.gridW,
+        Math.floor(k / STAMPEDE.gridW)
+      ]);
+      expect(cells.length).toBeLessThanOrEqual(STAMPEDE.rocks);
+      for (const [cx, cy] of cells) {
+        expect(cx).toBeGreaterThanOrEqual(STAMPEDE.rockMargin);
+        expect(cx).toBeLessThan(STAMPEDE.gridW - STAMPEDE.rockMargin);
+        expect(cy).toBeGreaterThanOrEqual(STAMPEDE.rockMargin);
+        expect(cy).toBeLessThan(STAMPEDE.gridH - STAMPEDE.rockMargin);
+      }
+      for (let i = 0; i < cells.length; i++) {
+        for (let j = i + 1; j < cells.length; j++) {
+          const d = Math.max(
+            Math.abs(cells[i][0] - cells[j][0]),
+            Math.abs(cells[i][1] - cells[j][1])
+          );
+          expect(d, `seed ${seed}: rocks ${i},${j} too close`).toBeGreaterThanOrEqual(
+            STAMPEDE.rockSpacing
+          );
+        }
+      }
+    }
+  });
+
+  it('the first step after standing still is instant', () => {
+    const ctx = mkCtx([0, 1, 2]);
+    stampede.init(ctx);
+    const st = ctx.priv as any;
+    st.rocks = new Set();
+    const hSlot = [0, 1, 2].find((s) => st.humans.has(s))!;
+    const hu = st.humans.get(hSlot);
+    hu.cx = 10;
+    hu.cy = 6;
+    step(ctx, stampede, 30); // idle: timers drain
+    stampede.input(ctx, hSlot, { g: 'stampede', dx: 1, dy: 0 });
+    step(ctx, stampede, 1);
+    expect(hu.cx).toBe(11); // moved on the very next tick
+  });
+
   it('flattening everyone ends the round early', () => {
     const ctx = mkCtx([0, 1, 2]);
     stampede.init(ctx);
