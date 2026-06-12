@@ -64,7 +64,7 @@ function renderJoin(): void {
         <button id="j-join" class="secondary">Join</button>
       </div>
       <div class="err" id="j-err">${errText()}</div>
-      <div class="hint">A game-show night for 6 friends: six quick challenges, points for every finish,
+      <div class="hint">A game-show night for 6 friends: seven quick challenges, points for every finish,
       one Island Champion. Phones and computers both work.</div>
     </div>`;
   join.querySelectorAll('[data-c]').forEach((d) =>
@@ -145,7 +145,7 @@ function renderLobby(): void {
       ${
         isHost
           ? `<button id="l-start" ${n < MIN_PLAYERS ? 'disabled' : ''}>🔥 Light the torches (${n} castaways)</button>
-             <div class="hint" style="text-align:center">Six challenges. Points every game. Most points takes the Cup.</div>`
+             <div class="hint" style="text-align:center">Seven challenges. Points every game. Most points takes the Cup.</div>`
           : `<div class="hint" style="text-align:center">Waiting for the host to light the torches...</div>`
       }
     </div>`;

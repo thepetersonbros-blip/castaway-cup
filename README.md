@@ -1,8 +1,8 @@
 # Castaway Cup
 
-An island game-show night for six friends in the browser. No downloads: join with a link and a 4-letter code. Six quick challenges, points for every finish, a torch leaderboard between games, and one Island Champion at the end.
+An island game-show night for six friends in the browser. No downloads: join with a link and a 4-letter code. Seven quick challenges, points for every finish, a torch leaderboard between games, and one Island Champion at the end.
 
-## The six challenges (shuffled each season)
+## The seven challenges (shuffled each season)
 
 1. **FRICTION**: tap when the spark crosses the hot zone to grow your fire. Misses fizzle it. First flame wins.
 2. **THE SHALLOWS**: one shared lagoon. Spear fish for points (gold fish = 5). Steal your friends' catches.
@@ -10,8 +10,9 @@ An island game-show night for six friends in the browser. No downloads: join wit
 4. **THE PALMS**: climb by alternating left/right taps. Same hand twice = slip.
 5. **ECHOES OF THE ELDERS**: watch the totems flash, repeat the sequence. One more beat each round. Two mistakes and your torch goes out.
 6. **SNATCH THE IDOL**: pure reaction. Wait for the idol... GRAB. False starts cost a point. Reaction times are public, in milliseconds, for maximum arguing.
+7. **THE FEAST**: one shared beach covered in food. Run over it and it stacks above your head. Weight makes you slower and wobblier; stand still to steady the stack or it topples and anyone can steal the spill. Bank food at your colored mat. Fast little runs or one giant haul: your call.
 
-Scoring: 1st place 10, then 7, 5, 3, 2, 1. Ties share the better points. Most points after six challenges takes the Cup. The host can run a fresh season any time.
+Scoring: 1st place 10, then 7, 5, 3, 2, 1. Ties share the better points. Most points after seven challenges takes the Cup. The host can run a fresh season any time.
 
 ## Run it locally
 

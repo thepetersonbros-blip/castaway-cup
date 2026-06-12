@@ -8,6 +8,7 @@ import { balanceView } from './games/balanceView';
 import { climbView } from './games/climbView';
 import { memoryView } from './games/memoryView';
 import { idolView } from './games/idolView';
+import { gatherView } from './games/gatherView';
 import { sfx } from './audio';
 
 const VIEWS: Record<ChallengePub['g'], GameView> = {
@@ -16,7 +17,8 @@ const VIEWS: Record<ChallengePub['g'], GameView> = {
   balance: balanceView,
   climb: climbView,
   memory: memoryView,
-  idol: idolView
+  idol: idolView,
+  gather: gatherView
 };
 
 let canvas: HTMLCanvasElement;
@@ -35,25 +37,42 @@ export function initRenderer(c: HTMLCanvasElement): void {
   window.addEventListener('resize', resize);
   window.visualViewport?.addEventListener('resize', resize);
 
+  const view = (): GameView | null =>
+    game.phase === 'playing' && game.state ? (VIEWS[game.state.g] ?? null) : null;
+
   canvas.addEventListener('pointerdown', (e) => {
-    if (game.phase !== 'playing' || !game.state) return;
-    const view = VIEWS[game.state.g];
+    const v = view();
+    if (!v) return;
+    canvas.setPointerCapture(e.pointerId);
     const rect = canvas.getBoundingClientRect();
-    const msg = view.onPointer?.(rect.width, rect.height, e.clientX - rect.left, e.clientY - rect.top);
+    const msg = v.onPointer?.(rect.width, rect.height, e.clientX - rect.left, e.clientY - rect.top);
     if (msg) {
       sendPlay(msg);
       sfx.tap();
     }
   });
+  canvas.addEventListener('pointermove', (e) => {
+    const v = view();
+    if (!v?.onPointerMove) return;
+    const rect = canvas.getBoundingClientRect();
+    v.onPointerMove(rect.width, rect.height, e.clientX - rect.left, e.clientY - rect.top);
+  });
+  for (const ev of ['pointerup', 'pointercancel'] as const) {
+    canvas.addEventListener(ev, () => view()?.onPointerUp?.());
+  }
   window.addEventListener('keydown', (e) => {
     const tgt = e.target as HTMLElement;
     if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA')) return;
-    if (game.phase !== 'playing' || !game.state) return;
+    const v = view();
+    if (!v) return;
     if (e.repeat) return;
     const key = e.key.toLowerCase();
     if (key === ' ') e.preventDefault();
-    const msg = VIEWS[game.state.g].onKey?.(key);
+    const msg = v.onKey?.(key);
     if (msg) sendPlay(msg);
+  });
+  window.addEventListener('keyup', (e) => {
+    view()?.onKeyUp?.(e.key.toLowerCase());
   });
 
   requestAnimationFrame(frame);
@@ -69,7 +88,7 @@ function frame(now: number): void {
   backdrop(ctx, w, h, now);
 
   if (game.phase === 'playing' && game.state) {
-    VIEWS[game.state.g].render(ctx, w, h, game.state, now);
+    VIEWS[game.state.g]?.render(ctx, w, h, game.state, now);
   } else if (game.phase === 'countdown') {
     const left = Math.ceil(phaseSecondsLeft());
     if (left !== lastCount) {

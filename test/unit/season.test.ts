@@ -16,11 +16,11 @@ function mkRoom(n: number): Room {
 }
 
 describe('a full season', () => {
-  it('runs all six challenges, scores every game, and crowns a champion', () => {
+  it('runs every challenge, scores every game, and crowns a champion', () => {
     const room = mkRoom(6);
     startSeason(room);
-    expect(room.order.length).toBe(6);
-    expect(new Set(room.order).size).toBe(6); // every challenge exactly once
+    expect(room.order.length).toBe(CHALLENGE_KEYS.length);
+    expect(new Set(room.order).size).toBe(CHALLENGE_KEYS.length); // each exactly once
 
     const phasesSeen = new Set<string>();
     const resultsSeen: string[] = [];
@@ -43,16 +43,16 @@ describe('a full season', () => {
     }
 
     expect(room.phase).toBe('final');
-    expect(resultsSeen.length).toBe(6);
-    expect(new Set(resultsSeen).size).toBe(6);
+    expect(resultsSeen.length).toBe(CHALLENGE_KEYS.length);
+    expect(new Set(resultsSeen).size).toBe(CHALLENGE_KEYS.length);
     for (const p of ['intro', 'countdown', 'playing', 'results', 'standings']) {
       expect(phasesSeen.has(p), `phase ${p} happened`).toBe(true);
     }
     expect(room.final).not.toBeNull();
     expect(room.final!.champions.length).toBeGreaterThanOrEqual(1);
-    // totals are the sum of six games of points: at least 6 * min points each
+    // totals are the sum of every game's points: at least 1 per challenge
     for (const t of room.final!.totals) {
-      expect(t.total).toBeGreaterThanOrEqual(6);
+      expect(t.total).toBeGreaterThanOrEqual(CHALLENGE_KEYS.length);
     }
     // the champion has the top total
     const top = Math.max(...room.final!.totals.map((t) => t.total));

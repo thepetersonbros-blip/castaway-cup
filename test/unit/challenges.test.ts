@@ -9,7 +9,9 @@ import { balance } from '../../src/server/challenges/balance';
 import { climb } from '../../src/server/challenges/climb';
 import { memory } from '../../src/server/challenges/memory';
 import { idol } from '../../src/server/challenges/idol';
+import { gather } from '../../src/server/challenges/gather';
 import { rankRows } from '../../src/server/season';
+import { GATHER } from '../../src/shared/constants';
 
 function mkCtx(slots: number[], seed = 7): Ctx {
   return { t: 0, rand: mulberry32(seed), slots, connected: () => true, priv: null, pub: null };
@@ -189,6 +191,82 @@ describe('idol', () => {
     expect(rows[0].slot).toBe(0);
     // shame is permanent: the early bird never out-scores the champion
     expect(rows.find((r) => r.slot === 2)!.place).toBeGreaterThan(1);
+  });
+});
+
+describe('gather', () => {
+  const noSpawn = (ctx: Ctx) => {
+    (ctx.priv as any).items = [];
+    (ctx.priv as any).lastSpawn = 9_999_999;
+  };
+
+  it('weight slows you down; banking at your mat scores it', () => {
+    const ctx = mkCtx([0, 1]);
+    gather.init(ctx);
+    noSpawn(ctx);
+    const st = ctx.priv as any;
+    const me = st.p[0];
+    // empty-handed sprint
+    me.x = 8;
+    me.y = 10;
+    gather.input(ctx, 0, { g: 'gather', dx: 1, dy: 0 });
+    step(ctx, gather, 10);
+    const fast = me.x - 8;
+    // loaded waddle
+    me.x = 8;
+    me.carry = ['pine', 'pine'];
+    me.wobble = 0;
+    step(ctx, gather, 10);
+    const slow = me.x - 8;
+    expect(slow).toBeLessThan(fast * 0.8);
+    // pickup
+    gather.input(ctx, 0, { g: 'gather', dx: 0, dy: 0 });
+    st.items.push({ id: 99, x: me.x, y: me.y, kind: 'berry' });
+    step(ctx, gather, 1);
+    expect(me.carry).toContain('berry');
+    expect(st.items.length).toBe(0);
+    // banking
+    me.x = me.hx;
+    me.y = me.hy;
+    const expectPts = me.carry.reduce((s: number, k: string) => s + (GATHER.pts as any)[k], 0);
+    step(ctx, gather, 1);
+    expect(me.banked).toBe(expectPts);
+    expect(me.carry.length).toBe(0);
+    const rows = rankRows(gather.result(ctx));
+    expect(rows[0].slot).toBe(0);
+  });
+
+  it('running with a heavy stack topples it and scatters the food', () => {
+    const ctx = mkCtx([0]);
+    gather.init(ctx);
+    noSpawn(ctx);
+    const st = ctx.priv as any;
+    const me = st.p[0];
+    me.x = 18;
+    me.y = 10;
+    me.carry = Array(8).fill('coconut');
+    gather.input(ctx, 0, { g: 'gather', dx: 1, dy: 0 });
+    let guard = 0;
+    while (me.dizzy <= 0 && guard++ < 400) step(ctx, gather, 1);
+    expect(me.dizzy).toBeGreaterThan(0);
+    expect(me.carry.length).toBe(0);
+    expect(st.items.length).toBe(8); // scattered, stealable
+  });
+
+  it('standing still steadies the stack', () => {
+    const ctx = mkCtx([0]);
+    gather.init(ctx);
+    noSpawn(ctx);
+    const st = ctx.priv as any;
+    const me = st.p[0];
+    me.x = 18; // step off the home mat first, or the coconut banks itself
+    me.y = 10;
+    me.carry = ['coconut'];
+    me.wobble = 60;
+    gather.input(ctx, 0, { g: 'gather', dx: 0, dy: 0 });
+    step(ctx, gather, 30);
+    expect(me.wobble).toBe(0);
+    expect(me.carry.length).toBe(1); // still on your head
   });
 });
 

@@ -4,7 +4,10 @@ import type { PlayMsg } from '../../shared/protocol';
 export interface GameView {
   render(ctx: CanvasRenderingContext2D, w: number, h: number, state: any, now: number): void;
   onPointer?(w: number, h: number, x: number, y: number): PlayMsg | null;
+  onPointerMove?(w: number, h: number, x: number, y: number): void;
+  onPointerUp?(): void;
   onKey?(key: string): PlayMsg | null;
+  onKeyUp?(key: string): void;
 }
 
 export const colorOf = (idx: number): string => TRIBE_COLORS[idx] ?? '#fff';

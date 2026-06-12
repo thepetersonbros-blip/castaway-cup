@@ -81,6 +81,28 @@ export const MEMORY = {
   betweenTicks: sec(1.2)
 };
 
+export const GATHER = {
+  maxTicks: sec(90),
+  arenaW: 36,
+  arenaH: 20,
+  baseSpeed: 0.26, // units per tick, empty-handed
+  slowPerWeight: 0.05, // each point of carried weight slows you 5%
+  minSpeedFactor: 0.3,
+  maxStack: 10,
+  wobbleBase: 0.5, // wobble per moving tick (loaded)
+  wobblePerWeight: 0.3,
+  wobbleDecay: 4, // per standing tick
+  toppleAt: 100,
+  dizzyTicks: sec(1.2),
+  pickupRadius: 0.9,
+  bankRadius: 1.7,
+  startItems: 12,
+  maxItems: 20,
+  scatterMax: 30, // map cap including toppled food
+  spawnEvery: sec(1.2),
+  pts: { berry: 1, coconut: 2, pine: 5 }
+};
+
 export const IDOL = {
   draws: 5,
   waitMin: sec(1.6),

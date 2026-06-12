@@ -2,7 +2,9 @@
 
 export type Phase = 'lobby' | 'intro' | 'countdown' | 'playing' | 'results' | 'standings' | 'final';
 
-export type ChallengeKey = 'fire' | 'fish' | 'balance' | 'climb' | 'memory' | 'idol';
+export type ChallengeKey = 'fire' | 'fish' | 'balance' | 'climb' | 'memory' | 'idol' | 'gather';
+
+export type FoodKind = 'berry' | 'coconut' | 'pine';
 
 // ---------- client -> server ----------
 
@@ -21,7 +23,8 @@ export type PlayMsg =
   | { g: 'balance'; dir: -1 | 1 } // lean
   | { g: 'climb'; side: 'L' | 'R' }
   | { g: 'memory'; tile: number }
-  | { g: 'idol' }; // grab
+  | { g: 'idol' } // grab
+  | { g: 'gather'; dx: number; dy: number }; // held movement direction, (0,0) = stop
 
 export type LobbyMsg =
   | { type: 'color'; color: number }
@@ -68,7 +71,25 @@ export interface IdolPub {
   draws: number;
   scores: { slot: number; score: number; locked: boolean; ms: number | null }[]; // ms = this draw's reaction
 }
-export type ChallengePub = FirePub | FishPub | BalancePub | ClimbPub | MemoryPub | IdolPub;
+export interface GatherPub {
+  g: 'gather';
+  items: { id: number; x: number; y: number; kind: FoodKind }[];
+  players: {
+    slot: number;
+    x: number;
+    y: number;
+    moving: boolean;
+    carry: FoodKind[];
+    wobble: number; // 0..100
+    banked: number;
+    dizzy: boolean;
+    hx: number; // home mat
+    hy: number;
+  }[];
+  left: number;
+}
+
+export type ChallengePub = FirePub | FishPub | BalancePub | ClimbPub | MemoryPub | IdolPub | GatherPub;
 
 // ---------- server -> client ----------
 
