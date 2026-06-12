@@ -8,6 +8,7 @@ const esc = (s: string) =>
 
 let join: HTMLElement;
 let lobby: HTMLElement;
+let pickScr: HTMLElement;
 let intro: HTMLElement;
 let results: HTMLElement;
 let standings: HTMLElement;
@@ -28,6 +29,7 @@ export function initUi(): void {
   const ui = document.getElementById('ui')!;
   join = el('screen', 'scr-join');
   lobby = el('screen', 'scr-lobby');
+  pickScr = el('overlay', 'scr-pick');
   intro = el('overlay', 'scr-intro');
   results = el('overlay', 'scr-results');
   standings = el('overlay', 'scr-standings');
@@ -35,7 +37,7 @@ export function initUi(): void {
   curtain = el('', 'curtain');
   topbar = el('', 'topbar');
   topbar.id = 'topbar';
-  ui.append(join, lobby, intro, results, standings, final, topbar, curtain);
+  ui.append(join, lobby, pickScr, intro, results, standings, final, topbar, curtain);
   pickedColor = Number(localStorage.getItem('cc.color') ?? 0) || 0;
   renderJoin();
   setInterval(tickTimers, 250);
@@ -64,8 +66,8 @@ function renderJoin(): void {
         <button id="j-join" class="secondary">Join</button>
       </div>
       <div class="err" id="j-err">${errText()}</div>
-      <div class="hint">A game-show night for 6 friends: nine quick challenges, points for every finish,
-      one Island Champion. Phones and computers both work.</div>
+      <div class="hint">A game-show night for 2 to 10 castaways: nine quick challenges, the host picks
+      what's next, points for every finish, one Island Champion. Phones and computers both work.</div>
     </div>`;
   join.querySelectorAll('[data-c]').forEach((d) =>
     d.addEventListener('click', () => {
@@ -160,6 +162,45 @@ function renderLobby(): void {
       if (!taken.has(c)) sendLobby({ type: 'color', color: c });
     })
   );
+}
+
+function renderPick(): void {
+  const entries = game.pick ?? [];
+  const me = game.roster.find((r) => r.slot === game.you.slot);
+  const isHost = !!me?.isHost;
+  const hostName = game.roster.find((r) => r.isHost)?.name ?? 'The host';
+  const playedCount = entries.filter((e) => e.played).length;
+  const headline = `CHALLENGE ${playedCount + 1} OF ${entries.length}`;
+  if (!isHost) {
+    pickScr.innerHTML = `
+      <div class="bigbanner" style="color:var(--sun)">👑 ${esc(hostName)} is choosing...</div>
+      <div class="hint">${headline.toLowerCase()}</div>
+      <div class="spin"></div>`;
+    return;
+  }
+  pickScr.innerHTML = `
+    <div class="bigbanner" style="color:var(--sun)">PICK THE NEXT CHALLENGE</div>
+    <div class="hint">${headline.toLowerCase()} · played ones are checked off</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;width:min(640px,94vw)">
+      ${entries
+        .map(
+          (e) => `<button class="secondary" data-pick="${e.key}" ${e.played ? 'disabled' : ''}
+            style="text-align:left;padding:10px 12px">
+            <div style="font-size:15px">${e.played ? '✅ ' : ''}${esc(e.title)}</div>
+            <div style="font-size:11.5px;color:var(--dim);font-weight:600">${esc(e.tagline)}</div>
+          </button>`
+        )
+        .join('')}
+    </div>
+    <div class="row">
+      <button id="p-random">🎲 Surprise me</button>
+      ${playedCount > 0 ? '<button id="p-finish" class="secondary">🏁 End season & crown champion</button>' : ''}
+    </div>`;
+  pickScr.querySelectorAll('[data-pick]').forEach((b) =>
+    b.addEventListener('click', () => sendLobby({ type: 'pick', key: (b as HTMLElement).dataset.pick as any }))
+  );
+  pickScr.querySelector('#p-random')?.addEventListener('click', () => sendLobby({ type: 'random' }));
+  pickScr.querySelector('#p-finish')?.addEventListener('click', () => sendLobby({ type: 'finish' }));
 }
 
 function renderIntro(): void {
@@ -276,6 +317,8 @@ export function route(): void {
   if (game.connState === 'boot') renderJoin();
   show(lobby, on && game.phase === 'lobby');
   if (on && game.phase === 'lobby') renderLobby();
+  show(pickScr, on && game.phase === 'pick');
+  if (on && game.phase === 'pick') renderPick();
   show(intro, on && game.phase === 'intro');
   if (on && game.phase === 'intro') renderIntro();
   show(results, on && game.phase === 'results');

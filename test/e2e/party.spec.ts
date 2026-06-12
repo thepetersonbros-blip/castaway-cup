@@ -30,6 +30,9 @@ test('three castaways run a season opener', async ({ browser }) => {
   await a.screenshot({ path: 'test-results/lobby.png' });
 
   await a.click('#l-start');
+  await a.waitForFunction(() => window.__game.phase === 'pick', undefined, { timeout: 10000 });
+  await a.screenshot({ path: 'test-results/pick.png' });
+  await a.click('#p-random');
   await a.waitForFunction(() => window.__game.phase === 'intro', undefined, { timeout: 10000 });
   await a.screenshot({ path: 'test-results/intro.png' });
 

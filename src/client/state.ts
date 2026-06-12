@@ -3,6 +3,7 @@ import type {
   ChallengePub,
   FinalMsg,
   Phase,
+  PickEntry,
   ResultsMsg,
   RosterEntry,
   Snap,
@@ -21,6 +22,7 @@ export const game = {
   state: null as ChallengePub | null,
   results: null as ResultsMsg | null,
   final: null as FinalMsg | null,
+  pick: null as PickEntry[] | null,
   serverTick: 0,
   phaseDeadline: 0 // performance.now()-based end of the current timed phase
 };
@@ -44,6 +46,7 @@ export function applySync(msg: SyncMsg): void {
   game.state = msg.state;
   game.results = msg.results;
   game.final = msg.final;
+  game.pick = msg.pick;
   game.serverTick = msg.tick;
   game.phaseDeadline = performance.now() + msg.phaseLeft * 50;
 }

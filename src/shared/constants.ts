@@ -5,7 +5,7 @@ export const TICKS_PER_SEC = 1000 / TICK_MS;
 export const SNAP_EVERY = 2; // 10 Hz snapshots
 export const sec = (s: number) => Math.round(s * TICKS_PER_SEC);
 
-export const MAX_PLAYERS = 8;
+export const MAX_PLAYERS = 10;
 export const MIN_PLAYERS = 2;
 export const ROOM_GC_MS = 10 * 60 * 1000;
 
@@ -16,7 +16,7 @@ export const RESULTS_TICKS = sec(8);
 export const STANDINGS_TICKS = sec(8);
 
 // points by finishing place (ties share the better place's points)
-export const POINTS = [10, 7, 5, 3, 2, 1, 1, 1];
+export const POINTS = [10, 7, 5, 4, 3, 2, 1, 1, 1, 1];
 
 // player colors (bandanas/torches)
 export const TRIBE_COLORS = [
@@ -27,7 +27,9 @@ export const TRIBE_COLORS = [
   '#9b59d0', // purple
   '#f07f2f', // orange
   '#27c5c5', // teal
-  '#e667ad' // pink
+  '#e667ad', // pink
+  '#9ade4a', // lime
+  '#ece5d0' // white
 ] as const;
 
 // ---- challenge tunables ----

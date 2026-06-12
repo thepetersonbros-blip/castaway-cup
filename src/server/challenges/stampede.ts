@@ -132,7 +132,9 @@ function setupRound(ctx: Ctx, st: St): void {
     [1, H - 2],
     [W - 2, H - 2],
     [Math.floor(W / 2), 1],
-    [Math.floor(W / 2), H - 2]
+    [Math.floor(W / 2), H - 2],
+    [1, Math.floor(H / 2)],
+    [W - 2, Math.floor(H / 2)]
   ];
   let c = 0;
   for (const slot of ctx.slots) {

@@ -109,26 +109,37 @@ describe('balance', () => {
 });
 
 describe('climb', () => {
-  it('alternating climbs, same-side slips', () => {
+  it('the grip pattern mixes runs (LL, RRR), not plain alternation', () => {
+    const ctx = mkCtx([0]);
+    climb.init(ctx);
+    const seq = (ctx.priv as any).seq as string;
+    expect(seq.length).toBeGreaterThanOrEqual(60);
+    expect(seq).toMatch(/^[LR]+$/);
+    // must contain at least one double of each hand somewhere
+    expect(seq).toMatch(/LL/);
+    expect(seq).toMatch(/RR/);
+  });
+
+  it('reading the pattern climbs; wrong arms slip and stall', () => {
     const ctx = mkCtx([0, 1]);
     climb.init(ctx);
     climb.tick(ctx);
     const st = ctx.priv as any;
-    // slot 1 spams the same side: goes nowhere fast
+    // slot 1 always presses the WRONG arm: zero progress, zero pattern advance
     for (let i = 0; i < 30; i++) {
       ctx.t += 10;
       climb.tick(ctx);
-      climb.input(ctx, 1, { g: 'climb', side: 'L' });
+      const want = st.seq[st.p[1].idx];
+      climb.input(ctx, 1, { g: 'climb', side: want === 'L' ? 'R' : 'L' });
     }
-    expect(st.p[1].h).toBeLessThan(15);
-    // slot 0 alternates cleanly to the top
-    let side: 'L' | 'R' = 'L';
+    expect(st.p[1].h).toBe(0);
+    expect(st.p[1].idx).toBe(0);
+    // slot 0 follows the pattern to the top
     let guard = 0;
-    while (st.p[0].fin < 0 && guard++ < 200) {
+    while (st.p[0].fin < 0 && guard++ < 300) {
       ctx.t += 2;
       climb.tick(ctx);
-      climb.input(ctx, 0, { g: 'climb', side });
-      side = side === 'L' ? 'R' : 'L';
+      climb.input(ctx, 0, { g: 'climb', side: st.seq[st.p[0].idx] });
     }
     expect(st.p[0].fin).toBeGreaterThan(0);
     const rows = rankRows(climb.result(ctx));

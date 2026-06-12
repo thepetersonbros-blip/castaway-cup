@@ -1,6 +1,14 @@
 // Every message that crosses the wire, both directions.
 
-export type Phase = 'lobby' | 'intro' | 'countdown' | 'playing' | 'results' | 'standings' | 'final';
+export type Phase =
+  | 'lobby'
+  | 'pick' // the host chooses the next challenge
+  | 'intro'
+  | 'countdown'
+  | 'playing'
+  | 'results'
+  | 'standings'
+  | 'final';
 
 export type ChallengeKey =
   | 'fire'
@@ -40,7 +48,10 @@ export type PlayMsg =
 export type LobbyMsg =
   | { type: 'color'; color: number }
   | { type: 'start' } // host
-  | { type: 'again' }; // host, from final
+  | { type: 'again' } // host, from final
+  | { type: 'pick'; key: ChallengeKey } // host, from the pick screen
+  | { type: 'random' } // host: surprise me
+  | { type: 'finish' }; // host: end the season now, crown with current totals
 
 // ---------- challenge public states (sent in snapshots) ----------
 
@@ -65,7 +76,8 @@ export interface BalancePub {
 }
 export interface ClimbPub {
   g: 'climb';
-  players: { slot: number; h: number; fin: number; sting: boolean; last: 'L' | 'R' | null }[];
+  seq: string; // the shared grip pattern, e.g. "LLRLRRRL..." (same for everyone)
+  players: { slot: number; h: number; fin: number; sting: boolean; idx: number }[];
 }
 export interface MemoryPub {
   g: 'memory';
@@ -170,6 +182,13 @@ export interface FinalMsg {
   champions: number[]; // slot(s), ties possible
 }
 
+export interface PickEntry {
+  key: ChallengeKey;
+  title: string;
+  tagline: string;
+  played: boolean;
+}
+
 export interface SyncMsg {
   v: number;
   tick: number;
@@ -183,6 +202,7 @@ export interface SyncMsg {
   phaseLeft: number; // ticks left in timed phases
   results: ResultsMsg | null;
   final: FinalMsg | null;
+  pick: PickEntry[] | null; // present during the 'pick' phase
 }
 
 export interface Snap {

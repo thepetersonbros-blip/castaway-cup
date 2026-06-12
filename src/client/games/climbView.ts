@@ -43,13 +43,32 @@ export const climbView: GameView = {
       if (p.sting) txt(ctx, 'SLIP!', cx, cy - 44, 14, '#ff9a8a');
       if (p.fin >= 0) txt(ctx, '🥥 TOP!', cx, topY - 14, 16, '#ffd98a');
       chip(ctx, cx - 30, groundY + 24, colorIdxOf(p.slot), `${nameOf(p.slot)} ${Math.round(p.h)}%`, 12.5);
-      // next-hand hint on my tree
-      if (mine && p.fin < 0) {
-        const next = p.last === 'L' ? 'R' : p.last === 'R' ? 'L' : 'either';
-        txt(ctx, next === 'either' ? 'tap L or R' : `next: ${next}`, cx, cy + 22, 12, '#ffe8c8');
-      }
     });
-    txt(ctx, 'Alternate LEFT / RIGHT taps (or A / D). Same side twice = slip!', w / 2, h * 0.07, 15, '#ffe8c8');
+
+    // MY grip pattern: the next few grips, biggest first
+    const meP = state.players.find((p) => p.slot === game.you.slot);
+    if (meP && meP.fin < 0 && state.seq) {
+      const upcoming = state.seq.slice(meP.idx, meP.idx + 6).split('');
+      let px = w / 2 - 90;
+      upcoming.forEach((c, i) => {
+        const big = i === 0;
+        const size = big ? 40 : 26 - i * 2;
+        const bx = px + (big ? 22 : 16);
+        ctx.fillStyle = c === 'L' ? (big ? '#f07f2f' : '#f07f2f88') : big ? '#2f7fe8' : '#2f7fe888';
+        ctx.beginPath();
+        ctx.roundRect(px, h * 0.1 - size / 2, big ? 44 : 32, size, 8);
+        ctx.fill();
+        if (big) {
+          ctx.strokeStyle = '#fff3b0';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+        txt(ctx, c, bx, h * 0.1, big ? 26 : 17, '#10202e');
+        px += big ? 52 : 38;
+      });
+      txt(ctx, '⬑ next grip', w / 2 + 130, h * 0.1, 12, '#9fb3bf', 'left');
+    }
+    txt(ctx, 'Follow the grip pattern (A = L, D = R). Wrong arm = slip!', w / 2, h * 0.045, 15, '#ffe8c8');
     ctx.fillStyle = '#ffffff10';
     ctx.fillRect(0, h * 0.5, w * 0.5, h * 0.5);
     txt(ctx, 'L', w * 0.25, h * 0.93, 28, '#ffffff44');

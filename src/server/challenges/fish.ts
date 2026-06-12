@@ -37,8 +37,9 @@ export const fish: Challenge = {
       splashes: { x: number; y: number; t: number; hit: boolean; slot: number }[];
       lastSpawn: number;
     };
-    // spawn
-    if (ctx.t - st.lastSpawn >= FISH.spawnEvery && st.fish.length < FISH.maxFish) {
+    // spawn (a fuller pond for bigger tribes)
+    const fishCap = Math.max(FISH.maxFish, ctx.slots.length + 3);
+    if (ctx.t - st.lastSpawn >= FISH.spawnEvery && st.fish.length < fishCap) {
       st.lastSpawn = ctx.t;
       const roll = ctx.rand();
       const kind: Fish['kind'] = roll < 0.12 ? 'gold' : roll < 0.5 ? 'small' : 'med';

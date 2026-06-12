@@ -19,8 +19,8 @@ export interface Room {
   tick: number;
   phase: Phase;
   players: (PlayerSlot | null)[];
-  order: ChallengeKey[];
-  idx: number; // which challenge of the season
+  played: ChallengeKey[]; // finished this season, in order
+  currentKey: ChallengeKey | null; // the one being introduced/played
   challenge: Challenge | null;
   ctx: Ctx | null;
   phaseTicks: number; // remaining in intro/countdown/results/standings

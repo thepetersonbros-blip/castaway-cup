@@ -72,8 +72,11 @@ describe('six castaways online', () => {
     expect(colors.size).toBe(6);
   });
 
-  it('the season starts: intro card, then live snapshots', async () => {
+  it('the season starts: host picks, intro card, then live snapshots', async () => {
     bots[0].sock.emit('lobby', { type: 'start' });
+    await waitFor(() => bots[3].sync?.phase === 'pick', 'pick phase');
+    expect(bots[0].sync!.pick?.length).toBeGreaterThanOrEqual(9);
+    bots[0].sock.emit('lobby', { type: 'random' });
     await waitFor(() => bots[3].sync?.phase === 'intro', 'intro phase');
     expect(bots[3].sync!.card?.title?.length).toBeGreaterThan(2);
     // through countdown into the first challenge (about 12 seconds)

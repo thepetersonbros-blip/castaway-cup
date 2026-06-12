@@ -2,7 +2,7 @@ import type { Server, Socket } from 'socket.io';
 import { MIN_PLAYERS, TRIBE_COLORS } from '../shared/constants';
 import type { JoinAuth, LobbyMsg, PlayMsg } from '../shared/protocol';
 import { joinRoom, migrateHost } from './rooms';
-import { connectedPlayers, startSeason } from './season';
+import { connectedPlayers, endSeasonNow, pickChallenge, startSeason } from './season';
 import { buildSync } from './serialize';
 import type { PlayerSlot, Room } from './types';
 
@@ -81,6 +81,16 @@ export function attachHandlers(io: Server): void {
       if (raw.type === 'again') {
         if (!player.isHost || room.phase !== 'final') return;
         startSeason(room);
+        return;
+      }
+      if (raw.type === 'pick' || raw.type === 'random') {
+        if (!player.isHost) return;
+        pickChallenge(room, raw.type === 'random' ? 'random' : raw.key);
+        return;
+      }
+      if (raw.type === 'finish') {
+        if (!player.isHost) return;
+        endSeasonNow(room);
       }
     });
 

@@ -1,7 +1,7 @@
 import type { Server } from 'socket.io';
 import { PROTOCOL_VERSION, SNAP_EVERY } from '../shared/constants';
 import type { RosterEntry, Snap, SyncMsg } from '../shared/protocol';
-import { cardOf, totalsOf } from './season';
+import { cardOf, pickList, totalsOf } from './season';
 import type { PlayerSlot, Room } from './types';
 
 export function buildRoster(room: Room): RosterEntry[] {
@@ -29,7 +29,8 @@ export function buildSync(room: Room, p: PlayerSlot): SyncMsg {
     state: room.ctx?.pub ?? null,
     phaseLeft: room.phaseTicks,
     results: room.results,
-    final: room.final
+    final: room.final,
+    pick: room.phase === 'pick' ? pickList(room) : null
   };
 }
 
