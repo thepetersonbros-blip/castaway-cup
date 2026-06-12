@@ -7,6 +7,7 @@ import { climb } from './climb';
 import { memory } from './memory';
 import { idol } from './idol';
 import { gather } from './gather';
+import { type } from './type';
 
 export const CHALLENGES: Record<ChallengeKey, Challenge> = {
   fire,
@@ -15,7 +16,8 @@ export const CHALLENGES: Record<ChallengeKey, Challenge> = {
   climb,
   memory,
   idol,
-  gather
+  gather,
+  type
 };
 
 export const CHALLENGE_KEYS: ChallengeKey[] = [
@@ -25,5 +27,6 @@ export const CHALLENGE_KEYS: ChallengeKey[] = [
   'climb',
   'memory',
   'idol',
-  'gather'
+  'gather',
+  'type'
 ];

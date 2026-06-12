@@ -9,6 +9,7 @@ import { climbView } from './games/climbView';
 import { memoryView } from './games/memoryView';
 import { idolView } from './games/idolView';
 import { gatherView } from './games/gatherView';
+import { hideTypeInput, typeView } from './games/typeView';
 import { sfx } from './audio';
 
 const VIEWS: Record<ChallengePub['g'], GameView> = {
@@ -18,7 +19,8 @@ const VIEWS: Record<ChallengePub['g'], GameView> = {
   climb: climbView,
   memory: memoryView,
   idol: idolView,
-  gather: gatherView
+  gather: gatherView,
+  type: typeView
 };
 
 let canvas: HTMLCanvasElement;
@@ -86,6 +88,8 @@ function frame(now: number): void {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   backdrop(ctx, w, h, now);
+
+  if (!(game.phase === 'playing' && game.state?.g === 'type')) hideTypeInput();
 
   if (game.phase === 'playing' && game.state) {
     VIEWS[game.state.g]?.render(ctx, w, h, game.state, now);

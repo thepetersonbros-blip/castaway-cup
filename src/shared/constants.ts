@@ -92,7 +92,11 @@ export const GATHER = {
   wobbleBase: 0.5, // wobble per moving tick (loaded)
   wobblePerWeight: 0.3,
   wobbleDecay: 4, // per standing tick
-  toppleAt: 100,
+  // The red zone: past redAt the stack can topple at ANY moment. The deeper
+  // you push toward the cap, the worse the per-tick odds. No countdown.
+  redAt: 60,
+  wobbleCap: 130,
+  toppleChance: 0.085, // per-tick odds at the very top of the red
   dizzyTicks: sec(1.2),
   pickupRadius: 0.9,
   bankRadius: 1.7,
@@ -101,6 +105,13 @@ export const GATHER = {
   scatterMax: 30, // map cap including toppled food
   spawnEvery: sec(1.2),
   pts: { berry: 1, coconut: 2, pine: 5 }
+};
+
+export const TYPE = {
+  rounds: 10,
+  roundTicks: sec(12), // time limit per word
+  scoredTicks: sec(2),
+  podium: [3, 2, 1]
 };
 
 export const IDOL = {

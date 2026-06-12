@@ -10,8 +10,9 @@ import { climb } from '../../src/server/challenges/climb';
 import { memory } from '../../src/server/challenges/memory';
 import { idol } from '../../src/server/challenges/idol';
 import { gather } from '../../src/server/challenges/gather';
+import { type as typeGame } from '../../src/server/challenges/type';
 import { rankRows } from '../../src/server/season';
-import { GATHER } from '../../src/shared/constants';
+import { GATHER, TYPE } from '../../src/shared/constants';
 
 function mkCtx(slots: number[], seed = 7): Ctx {
   return { t: 0, rand: mulberry32(seed), slots, connected: () => true, priv: null, pub: null };
@@ -253,6 +254,25 @@ describe('gather', () => {
     expect(st.items.length).toBe(8); // scattered, stealable
   });
 
+  it('below the red line, a stack never topples', () => {
+    const ctx = mkCtx([0]);
+    gather.init(ctx);
+    noSpawn(ctx);
+    const st = ctx.priv as any;
+    const me = st.p[0];
+    me.x = 18;
+    me.y = 10;
+    me.carry = ['coconut', 'coconut'];
+    gather.input(ctx, 0, { g: 'gather', dx: 1, dy: 0 });
+    for (let i = 0; i < 300; i++) {
+      me.wobble = Math.min(me.wobble, GATHER.redAt - 5); // disciplined pulser
+      me.x = 10; // stay off walls and the mat
+      step(ctx, gather, 1);
+      expect(me.dizzy).toBe(0);
+    }
+    expect(me.carry.length).toBe(2);
+  });
+
   it('standing still steadies the stack', () => {
     const ctx = mkCtx([0]);
     gather.init(ctx);
@@ -267,6 +287,37 @@ describe('gather', () => {
     step(ctx, gather, 30);
     expect(me.wobble).toBe(0);
     expect(me.carry.length).toBe(1); // still on your head
+  });
+});
+
+describe('type (message in a bottle)', () => {
+  it('fastest correct words take the podium; typos and silence score nothing', () => {
+    const ctx = mkCtx([0, 1, 2]);
+    typeGame.init(ctx);
+    const st = ctx.priv as any;
+    let guard = 0;
+    while (!typeGame.done(ctx) && guard++ < 40000) {
+      ctx.t++;
+      typeGame.tick(ctx);
+      if (st.mode === 'go') {
+        const word = st.words[st.round - 1] as string;
+        // slot 0: instant, in capitals (case must not matter)
+        if (st.p[0].doneAt < 0) typeGame.input(ctx, 0, { g: 'type', word: word.toUpperCase() });
+        // slot 1: a typo first, then the word with messy spacing
+        if (st.p[1].doneAt < 0) {
+          typeGame.input(ctx, 1, { g: 'type', word: `${word}x` });
+          if (ctx.t - st.modeAt > 6) typeGame.input(ctx, 1, { g: 'type', word: `  ${word}  ` });
+        }
+        // slot 2: stares at the sea
+      }
+    }
+    expect(typeGame.done(ctx)).toBe(true);
+    expect(st.p[0].score).toBe(TYPE.rounds * TYPE.podium[0]);
+    expect(st.p[1].score).toBe(TYPE.rounds * TYPE.podium[1]);
+    expect(st.p[2].score).toBe(0);
+    const rows = rankRows(typeGame.result(ctx));
+    expect(rows[0].slot).toBe(0);
+    expect(rows[2].slot).toBe(2);
   });
 });
 

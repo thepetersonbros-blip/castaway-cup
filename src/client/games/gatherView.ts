@@ -161,8 +161,9 @@ export const gatherView: GameView = {
       ctx.ellipse(cx, cy + 2, 12, 4, 0, 0, Math.PI * 2);
       ctx.fill();
       castaway(ctx, cx, cy, mine ? 8 : 7, colorIdxOf(p.slot), 0, false);
-      // the stack
-      const wob = (p.wobble / 100) * 10;
+      // the stack: sway gets violent in the red zone
+      const inRed = p.wobble > GATHER.redAt;
+      const wob = (p.wobble / GATHER.wobbleCap) * 12 + (inRed ? Math.sin(now / 40) * 3 : 0);
       p.carry.forEach((k, i) => {
         const sway = Math.sin(now / 90 + i * 0.7) * wob * ((i + 1) / p.carry.length);
         drawFood(ctx, k, cx + sway, cy - 32 - i * 10, 13);
@@ -170,14 +171,26 @@ export const gatherView: GameView = {
       if (p.dizzy) {
         txt(ctx, '💫', cx, cy - 40, 18);
       }
-      // wobble warning bar
+      // wobble bar: fills to the red line, then it's pure flashing dice
       if (mine && p.wobble > 25 && !p.dizzy) {
         const bw = 44;
+        const by = cy - 46 - p.carry.length * 10;
         ctx.fillStyle = '#10202e';
-        ctx.fillRect(cx - bw / 2, cy - 46 - p.carry.length * 10, bw, 6);
-        ctx.fillStyle = p.wobble > 75 ? '#e8443a' : p.wobble > 50 ? '#ffb84d' : '#2fb24c';
-        ctx.fillRect(cx - bw / 2, cy - 46 - p.carry.length * 10, bw * (p.wobble / 100), 6);
-        if (p.wobble > 75) txt(ctx, 'STEADY!!', cx, cy - 56 - p.carry.length * 10, 13, '#ff9a8a');
+        ctx.fillRect(cx - bw / 2, by, bw, 6);
+        if (inRed) {
+          // no countdown in the red: just panic
+          const flash = Math.floor(now / 110) % 2 === 0;
+          ctx.fillStyle = flash ? '#e8443a' : '#ff9a8a';
+          ctx.fillRect(cx - bw / 2, by, bw, 6);
+          if (flash) txt(ctx, '⚠ STEADY!! ⚠', cx, by - 10, 13, '#ff6a5a');
+        } else {
+          const fill = p.wobble / GATHER.redAt;
+          ctx.fillStyle = fill > 0.7 ? '#ffb84d' : '#2fb24c';
+          ctx.fillRect(cx - bw / 2, by, bw * fill, 6);
+        }
+        // the red line everyone learns to fear
+        ctx.fillStyle = '#e8443a';
+        ctx.fillRect(cx - bw / 2 + bw - 1.5, by - 1, 3, 8);
       }
       txt(ctx, nameOf(p.slot), cx, cy + 14, 11.5, mine ? '#fff3b0' : '#f4ecd8cc');
     }

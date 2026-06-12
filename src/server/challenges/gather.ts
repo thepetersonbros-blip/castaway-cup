@@ -53,7 +53,7 @@ export const gather: Challenge = {
   title: 'THE FEAST',
   tagline: 'Stack it high. Walk it home.',
   howTo:
-    'Hold a finger (or arrow keys / WASD) to run around the beach. Run over food and it stacks above your head. The heavier the stack, the slower you go, and moving makes it WOBBLE. Stand still to steady it, or it all topples and anyone can grab it. Bank food at YOUR colored mat. Berries 1, coconuts 2, pineapples 5. Only banked food counts!',
+    'Hold a finger (or arrow keys / WASD) to run around the beach. Run over food and it stacks above your head. The heavier the stack, the slower you go, and moving makes it WOBBLE. Push into the flashing red and it can topple at ANY moment, scattering everything for anyone to grab. Stand still to steady it. Bank food at YOUR colored mat. Berries 1, coconuts 2, pineapples 5. Only banked food counts!',
   maxTicks: GATHER.maxTicks,
 
   init(ctx: Ctx): void {
@@ -91,13 +91,20 @@ export const gather: Challenge = {
           GATHER.baseSpeed * Math.max(GATHER.minSpeedFactor, 1 - GATHER.slowPerWeight * weight);
         me.x = Math.min(GATHER.arenaW - 1, Math.max(1, me.x + me.dx * speed));
         me.y = Math.min(GATHER.arenaH - 1, Math.max(1, me.y + me.dy * speed));
-        if (weight > 0) me.wobble += GATHER.wobbleBase + GATHER.wobblePerWeight * weight;
+        if (weight > 0) {
+          me.wobble = Math.min(
+            GATHER.wobbleCap,
+            me.wobble + GATHER.wobbleBase + GATHER.wobblePerWeight * weight
+          );
+        }
       } else {
         me.wobble = Math.max(0, me.wobble - GATHER.wobbleDecay);
       }
 
-      // TIMBER!
-      if (me.wobble >= GATHER.toppleAt) {
+      // In the red zone the stack can go at ANY moment: pure nerve. Deeper
+      // into the red = worse odds per tick. Heavier stacks get there faster.
+      const depth = (me.wobble - GATHER.redAt) / (GATHER.wobbleCap - GATHER.redAt);
+      if (depth > 0 && me.carry.length > 0 && ctx.rand() < GATHER.toppleChance * depth * depth) {
         for (const k of me.carry) {
           if (st.items.length >= GATHER.scatterMax) break;
           st.items.push({
@@ -149,7 +156,7 @@ export const gather: Challenge = {
           y: Math.round(me.y * 20) / 20,
           moving: me.dx !== 0 || me.dy !== 0,
           carry: me.carry,
-          wobble: Math.round(Math.min(100, me.wobble)),
+          wobble: Math.round(me.wobble),
           banked: me.banked,
           dizzy: me.dizzy > 0,
           hx: Math.round(me.hx * 10) / 10,
